@@ -121,7 +121,7 @@ export default {
       }
       const base64 = btoa(binary);
       const prompt = makePrompt({ school, address, watermark, language, design, extraInstructions });
-      const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+      const model = env.GEMINI_MODEL || "gemini-3.8-flash";
       const apiResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
         {
