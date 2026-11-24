@@ -337,7 +337,6 @@ function printGeneratedAiPaper(){
  win.document.open();
  win.document.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet"><title>'+escapeAiHtml(paper.title||"Examination Paper")+'</title><style>'+css+'</style></head><body>'+markup+'</body></html>');
  win.document.close();
- win.onload=()=>{if(win.document.fonts&&win.document.fonts.ready)win.document.fonts.ready.then(()=>win.print());else win.print();};
 }
 const savedAiUrl=localStorage.getItem("stm_ai_backend_url");
 if(savedAiUrl)document.getElementById("aiBackendUrl").value=savedAiUrl;
