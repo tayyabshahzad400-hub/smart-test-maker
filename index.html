@@ -30,7 +30,10 @@ button{padding:12px 15px;border:0;border-radius:8px;background:#2563eb;color:whi
 .paper-head{text-align:center;border-bottom:2px solid #172554;padding-bottom:12px}
 .paper-head h2{font-size:21px;margin:6px}
 .paper-logo{max-width:65px;max-height:65px;object-fit:contain}
-.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:14px}
+.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:18px;display:inline-block;width:49%;vertical-align:top}.paper-line.section-line{background:#eaf0f8;padding:7px 10px;border-radius:5px;color:#172554}.paper-line.question-line{break-inside:avoid}.paper-line.meta-line{font-size:12px;color:#334155}.paper-line.blank-line{height:7px;min-height:7px;margin:0}
+.paper-line.urdu-line{font-family:Arial,'Noto Naskh Arabic',sans-serif;text-align:right;direction:rtl}.paper-line.mcq-instruction{font-weight:700;margin:8px 0}
+#previewDetails{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 15px;font-size:12px}
+@media print{.paper-line{break-inside:avoid}.paper-line.section-line{background:#eaf0f8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .watermark{position:absolute;top:45%;left:10%;width:80%;text-align:center;transform:rotate(-35deg);font-size:35px;font-weight:bold;color:rgba(20,35,65,.10);pointer-events:none;overflow-wrap:anywhere}
 #preview.premium{border:5px double #b18a43}
 #preview.premium .paper-head{border-color:#b18a43}
@@ -582,7 +585,18 @@ async function extractPtsFile(){
         status.textContent="PDF page "+i+" / "+pdf.numPages+" read ho raha hai…";
         const page=await pdf.getPage(i);
         const data=await page.getTextContent();
-        pages.push(data.items.map(x=>x.str).join(" "));
+        // Rebuild approximate visual lines from PDF coordinates instead of flattening
+        // every text item into one long space-separated paragraph.
+        const rows=[];
+        data.items.filter(x=>x.str&&x.str.trim()).forEach(item=>{
+          const y=Math.round(item.transform[5]/3)*3;
+          const x=item.transform[4];
+          let row=rows.find(r=>Math.abs(r.y-y)<=3);
+          if(!row){row={y,items:[]};rows.push(row);}
+          row.items.push({x,str:item.str.trim()});
+        });
+        rows.sort((a,b)=>b.y-a.y);
+        pages.push(rows.map(row=>row.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join("   ")).join("\n"));
       }
       extracted=pages.join("\n\n");
     }else throw new Error("Sirf PDF, DOCX aur TXT files supported hain.");
@@ -595,9 +609,9 @@ async function extractPtsFile(){
   }
 }
 function repairUrduBidiText(text){
-  // Some PDF/Google copy operations expose Urdu glyph runs in reverse visual order.
-  // Reverse only Urdu-script runs; leave English, numerals and formula runs untouched.
-  return String(text||"").replace(/[\u0600-\u06FF][\u0600-\u06FF\s،۔؟؛:()\[\]{}،٪٫٬ـ\-]*/g,run=>Array.from(run).reverse().join(""));
+  // Never reverse Urdu characters: Unicode logical order must be preserved.
+  // Browser bidirectional rendering handles direction; reversing code points corrupts words.
+  return String(text||"");
 }
 function cleanCopiedPaperText(raw){
   // Keep every source character while repairing common spacing and Urdu bidi copy order.
@@ -612,15 +626,22 @@ function cleanCopiedPaperText(raw){
 function renderPaperText(text){
   const host=document.getElementById("previewQuestions");
   host.replaceChildren();
-  const lines=String(text||"").split("\n");
-  lines.forEach(line=>{
+  const lines=String(text||"").replace(/\r\n?/g,"\n").split("\n");
+  lines.forEach(raw=>{
+    const line=raw.trim();
     const el=document.createElement("div");
     el.className="paper-line";
     el.textContent=line||" ";
-    el.dir=/[\u0600-\u06FF]/.test(line)&&!/[A-Za-z]/.test(line)?"rtl":"auto";
-    if(/^\s*(OBJECTIVE PART|SUBJECTIVE PART|Objective Part|Subjective Part)\s*$/i.test(line))el.classList.add("section-line");
-    if(/^\s*(Q\s*\d+\s*\.|\d+\.)/.test(line))el.classList.add("question-line");
-    if(/^\s*\([A-D]\)/i.test(line)||/^\s*[A-D]\s*[).]/i.test(line))el.classList.add("option-line");
+    const hasUrdu=/[\u0600-\u06FF]/.test(line);
+    const hasLatin=/[A-Za-z]/.test(line);
+    if(hasUrdu&&!hasLatin){el.dir="rtl";el.classList.add("urdu-line");}
+    else el.dir="auto";
+    if(!line){el.classList.add("blank-line");}
+    if(/^(SECTION\s*[A-Z0-9]|OBJECTIVE|SUBJECTIVE|MULTIPLE CHOICE|SHORT QUESTIONS?|LONG QUESTIONS?|PART\s*[A-Z0-9]|حصہ|معروضی|انشائیہ)/i.test(line))el.classList.add("section-line");
+    if(/^(Q\s*\d+\s*[.)]|Question\s*\d+|\d+\s*[.)])\s*/i.test(line))el.classList.add("question-line");
+    if(/^\s*(\([A-Da-d]\)|[A-Da-d]\s*[).]|[A-Da-d]\s*[-:])/.test(line))el.classList.add("option-line");
+    if(/^(Choose|Select|Tick|Attempt|Answer|نوٹ|ہدایات)/i.test(line))el.classList.add("mcq-instruction");
+    if(/^(Class|Subject|Paper Code|Exam Date|Time Allowed|Total Marks)\s*:/i.test(line))el.classList.add("meta-line");
     host.appendChild(el);
   });
 }
