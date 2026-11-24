@@ -4,6 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Smart Test Maker</title>
 <style>
 *{box-sizing:border-box}
@@ -30,7 +33,7 @@ button{padding:12px 15px;border:0;border-radius:8px;background:#2563eb;color:whi
 .paper-head{text-align:center;border-bottom:2px solid #172554;padding-bottom:12px}
 .paper-head h2{font-size:21px;margin:6px}
 .paper-logo{max-width:65px;max-height:65px;object-fit:contain}
-.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:18px;display:inline-block;width:49%;vertical-align:top}.paper-line.section-line{background:#eaf0f8;padding:7px 10px;border-radius:5px;color:#172554}.paper-line.question-line{break-inside:avoid}.paper-line.meta-line{font-size:12px;color:#334155}.paper-line.blank-line{height:7px;min-height:7px;margin:0}
+.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;direction:rtl;font-family:"Noto Nastaliq Urdu","Noto Naskh Arabic",serif;line-height:2.35;padding:2px 0 5px}.paper-line.urdu-containing{font-family:"Noto Nastaliq Urdu","Noto Naskh Arabic",serif;line-height:2.25;padding-top:2px;padding-bottom:4px}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:18px;display:inline-block;width:49%;vertical-align:top}.paper-line.section-line{background:#eaf0f8;padding:7px 10px;border-radius:5px;color:#172554}.paper-line.question-line{break-inside:avoid}.paper-line.meta-line{font-size:12px;color:#334155}.paper-line.blank-line{height:7px;min-height:7px;margin:0}
 .paper-line.urdu-line{font-family:Arial,'Noto Naskh Arabic',sans-serif;text-align:right;direction:rtl}.paper-line.mcq-instruction{font-weight:700;margin:8px 0}
 #previewDetails.paper-meta-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:12px;border:1px solid #94a3b8;text-align:left;font-size:11px}.paper-meta-grid>div{padding:6px 7px;border:1px solid #cbd5e1;min-width:0;display:flex;flex-direction:column;gap:3px}.paper-meta-grid b{font-size:10px;text-transform:uppercase;color:#475569}.paper-meta-grid span{font-weight:600;overflow-wrap:anywhere}.paper-meta-grid .syllabus{grid-column:span 4}.paper-body{padding-top:12px;line-height:1.55}.paper-line.mcq-option{display:inline-block;width:49%;padding:3px 8px;vertical-align:top;border-bottom:1px dotted #e2e8f0}.paper-line.part-heading{font-size:15px;font-weight:800;text-align:center;border:1px solid #94a3b8;background:#eaf0f8;padding:7px;margin:14px 0 9px;break-after:avoid}.paper-line.question-line{font-weight:600;margin-top:9px;break-after:avoid}.paper-line.question-continuation{margin-left:14px}.paper-line.page-footer{font-size:10px;color:#64748b;text-align:center;border-top:1px solid #cbd5e1;margin-top:14px;padding-top:5px}@media(max-width:520px){#previewDetails.paper-meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.paper-meta-grid .syllabus{grid-column:span 2}}@media print{#previewDetails.paper-meta-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.paper-meta-grid .syllabus{grid-column:span 4}}
 @media print{.paper-line{break-inside:avoid}.paper-line.section-line{background:#eaf0f8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -120,7 +123,7 @@ main{padding:0;margin:0}
 <option value="no">Hide Watermark</option>
 </select>
 <button class="primary" onclick="updatePreview()">Update PDF Preview</button>
-<button class="primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<button class="primary" onclick="printPaper()">🖨️ Print / Save as PDF</button>
 <p class="muted">Print screen mein destination ko Save as PDF select karein.</p>
 </section>
 
@@ -223,7 +226,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 2.1</footer>
+<footer>Smart Test Maker • Version 2.2</footer>
 
 <script>
 function prepareTest(){
@@ -376,6 +379,10 @@ reader.onload=()=>save(reader.result);
 reader.onerror=()=>alert("Logo could not be read.");
 reader.readAsDataURL(file);
 }else save("");
+}
+async function printPaper(){
+  try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;window.print();}
+  catch(e){window.print();}
 }
 function updatePreview(){
 const idx=document.getElementById("institution").value,p=idx===""?null:data[Number(idx)];
@@ -603,7 +610,7 @@ const host=document.getElementById("previewQuestions");host.replaceChildren();le
 String(text||"").replace(/\r\n?/g,"\n").split("\n").forEach(raw=>{
 const line=raw.trim();if(!line||/^Print DateTime:/i.test(line))return;
 const el=document.createElement("div");el.className="paper-line";el.textContent=line;
-const urdu=/[\u0600-\u06FF]/.test(line),latin=/[A-Za-z]/.test(line);if(urdu&&!latin){el.dir="rtl";el.classList.add("urdu-line");}else el.dir="auto";
+const urdu=/[\u0600-\u06FF]/.test(line),latin=/[A-Za-z]/.test(line);if(urdu){el.lang="ur";el.classList.add("urdu-containing");if(!latin){el.dir="rtl";el.classList.add("urdu-line");}else el.dir="auto";}else{el.lang="en";el.dir="ltr";}
 if(/^(OBJECTIVE PART|SUBJECTIVE PART|Objective Part|Subjective Part|SECTION\s*[A-Z0-9]|PART\s*[A-Z0-9]|معروضی|انشائیہ)/i.test(line)){el.classList.add("part-heading");previousQuestion=false;}
 else if(/^(Q\s*\d+\s*[.)]|Question\s*\d+|\d+\s*[.)])\s*/i.test(line)){el.classList.add("question-line");previousQuestion=true;}
 else if(/^\s*(\([A-Da-d]\)|[A-Da-d]\s*[).])/.test(line)){el.classList.add("mcq-option");previousQuestion=false;}
