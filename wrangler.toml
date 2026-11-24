@@ -1,0 +1,7 @@
+name = "smart-test-maker-ai"
+main = "api/worker.js"
+compatibility_date = "2026-11-24"
+workers_dev = true
+
+[vars]
+GEMINI_MODEL = "gemini-2.5-flash"
