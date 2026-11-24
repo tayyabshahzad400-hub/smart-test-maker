@@ -187,6 +187,28 @@ main{padding:0;margin:0}
 <button class="primary" onclick="prepareTest()">Prepare Test Configuration</button>
 <div id="testResult" class="muted"></div>
 </section>
+  <section class="panel">
+<h2>📚 Question Paper Builder</h2>
+
+<label>Question Type</label>
+<select id="questionType">
+<option>MCQ</option>
+<option>Short Question</option>
+<option>Long Question</option>
+</select>
+
+<label>Enter Question</label>
+<textarea id="questionText" placeholder="Write your question here"></textarea>
+
+<label>Question Marks</label>
+<input id="questionMarks" type="number" min="1" value="1">
+
+<button class="primary" onclick="addQuestion()">Add Question</button>
+
+<h3>Added Questions</h3>
+<div id="questionList"></div>
+<h3 id="totalQuestionMarks">Total Marks: 0</h3>
+</section>
 </main>
 <footer>Smart Test Maker • Version 1.2</footer>
 
@@ -208,6 +230,51 @@ result.textContent=
 " | Long: "+document.getElementById("longCount").value+
 " | "+document.getElementById("syllabusMode").value+
 " | "+document.getElementById("paperLanguage").value;
+}
+  let paperQuestions=[];
+
+function addQuestion(){
+const type=document.getElementById("questionType").value;
+const question=document.getElementById("questionText").value.trim();
+const marks=Number(document.getElementById("questionMarks").value);
+
+if(!question){
+alert("Please enter a question.");
+return;
+}
+if(marks<=0){
+alert("Please enter valid marks.");
+return;
+}
+
+paperQuestions.push({type,question,marks});
+document.getElementById("questionText").value="";
+showQuestions();
+}
+
+function showQuestions(){
+const list=document.getElementById("questionList");
+list.innerHTML="";
+let total=0;
+
+paperQuestions.forEach((q,i)=>{
+total+=q.marks;
+const item=document.createElement("div");
+item.className="profile";
+const text=document.createElement("span");
+text.textContent=(i+1)+". "+q.type+": "+q.question+" ("+q.marks+" marks)";
+const del=document.createElement("button");
+del.className="danger";
+del.textContent="Delete";
+del.onclick=()=>{
+paperQuestions.splice(i,1);
+showQuestions();
+};
+item.append(text,del);
+list.appendChild(item);
+});
+
+document.getElementById("totalQuestionMarks").textContent="Total Marks: "+total;
 }
   let data=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
 let selectedLogo="";
