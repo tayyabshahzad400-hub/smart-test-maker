@@ -211,7 +211,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.4</footer>
+<footer>Smart Test Maker • Version 1.5</footer>
 
 <script>
 function prepareTest(){
@@ -397,6 +397,30 @@ watermark.textContent=document.getElementById("watermark").value==="yes"?
 let preview=document.getElementById("preview");
 preview.className=document.getElementById("design").value==="premium"?"premium":"";
 }
+function restoreFormState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem("stm_form_state")||"{}");
+    Object.entries(saved).forEach(([id,value])=>{
+      const el=document.getElementById(id);
+      if(el && el.type!=="file" && typeof value==="string") el.value=value;
+    });
+  }catch(e){}
+}
+function saveFormState(){
+  const ids=["institution","design","testTitle","className","subject","testTime","marks","questions","watermarkText","language","fontSize","watermark","createClass","createSubject","createChapter","mcqCount","shortCount","longCount","syllabusMode","paperLanguage"];
+  const state={};
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) state[id]=el.value;
+  });
+  try{localStorage.setItem("stm_form_state",JSON.stringify(state));}
+  catch(e){}
+}
+restoreFormState();
+document.querySelectorAll("input:not([type=file]),select,textarea").forEach(el=>{
+  el.addEventListener("input",saveFormState);
+  el.addEventListener("change",saveFormState);
+});
 refreshProfiles();
 showQuestions();
 updatePreview();
