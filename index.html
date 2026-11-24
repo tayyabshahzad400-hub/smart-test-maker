@@ -210,7 +210,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.2</footer>
+<footer>Smart Test Maker • Version 1.3</footer>
 
 <script>
 function prepareTest(){
@@ -274,7 +274,8 @@ item.append(text,del);
 list.appendChild(item);
 });
 
-document.getElementById("totalQuestionMarks").textContent="Total Marks: "+total;
+document.getElementById("totalQuestionMarks").textContent="Total Marks: "+total+" | Questions: "+paperQuestions.length;
+updatePreview();
 }
   let data=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
 let selectedLogo="";
@@ -347,8 +348,26 @@ document.getElementById("previewDetails").textContent=
 "     Subject: "+document.getElementById("subject").value+
 "     Time: "+document.getElementById("testTime").value+
 "     Marks: "+document.getElementById("marks").value;
+const manualQuestions=document.getElementById("questions").value.trim();
+const questionTypes=["MCQ","Short Question","Long Question"];
+const builderSections=questionTypes.map(type=>{
+const matching=paperQuestions.filter(q=>q.type===type);
+if(!matching.length)return "";
+const heading=type==="MCQ"?"MULTIPLE CHOICE QUESTIONS":type==="Short Question"?"SHORT QUESTIONS":"LONG QUESTIONS";
+const lines=matching.map((q,i)=>(i+1)+". "+q.question+" ("+q.marks+" marks)");
+return heading+"\\n"+lines.join("\\n");
+}).filter(Boolean);
+const builderText=builderSections.join("\\n\\n");
+const questionParts=[];
+if(manualQuestions)questionParts.push(manualQuestions);
+if(builderText)questionParts.push(builderText);
 document.getElementById("previewQuestions").textContent=
-document.getElementById("questions").value||"Your test questions will appear here.";
+questionParts.join("\\n\\n")||"Your test questions will appear here.";
+const enteredMarks=document.getElementById("marks").value.trim();
+const builderTotal=paperQuestions.reduce((sum,q)=>sum+q.marks,0);
+if(!enteredMarks&&builderTotal>0){
+document.getElementById("previewDetails").textContent+= "     Builder Total: "+builderTotal;
+}
 document.getElementById("previewQuestions").style.fontSize=
 document.getElementById("fontSize").value+"px";
 document.getElementById("previewQuestions").dir=
