@@ -203,7 +203,7 @@ main{padding:0;margin:0}
 <label>Choose PTS Paper (PDF / DOCX / TXT)</label>
 <input id="ptsImportFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
 <button class="primary" id="extractPtsBtn" onclick="extractPtsFile()">Extract Paper Text</button>
-<p class="muted" id="ptsImportStatus" aria-live="polite">PDF aur Word extraction ke liye internet connection zaroori hai. Urdu PDF text layout source file ke mutabiq vary kar sakta hai.</p>
+<p class="muted" id="ptsImportStatus" aria-live="polite">Google se copied text bhi yahan paste kar sakte hain. PDF extraction layout-dependent ho sakti hai; copied text ko review karein.</p>
 <label>Extracted / Review Text</label>
 <textarea id="ptsExtractedText" style="min-height:220px" placeholder="Extracted PTS paper text yahan nazar ayega. Import ke baad zaroor review karein."></textarea>
 <button class="primary" onclick="usePtsTextInPaper()">Use in PDF Designer</button>
@@ -235,7 +235,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.7</footer>
+<footer>Smart Test Maker • Version 1.8</footer>
 
 <script>
 function prepareTest(){
@@ -598,13 +598,38 @@ async function extractPtsFile(){
     status.textContent="Import error: "+(e&&e.message?e.message:"File read nahi ho saki.");
   }
 }
+function cleanCopiedPaperText(raw){
+  // Preserve original wording and line order; repair only common copy/paste spacing.
+  let text=String(raw||"").replace(/\r\n?/g,"\n").replace(/[\u00a0\u2007\u202f]/g," ");
+  text=text.replace(/[ \t]+\n/g,"\n").replace(/\n[ \t]+/g,"\n");
+  text=text.split("\n").map(line=>line.replace(/[ \t]{2,}/g," ").trim()).join("\n");
+  text=text.replace(/(\bQ\s*\d+\s*\.)/gi,"\n$1");
+  text=text.replace(/\n{3,}/g,"\n\n").trim();
+  return text;
+}
+function extractPaperMeta(text){
+  const classMatch=text.match(/Class\s*Name\s*:\s*([^|\n]+)/i);
+  const subjectMatch=text.match(/Subject\s*Name\s*:\s*([^|\n]+)/i);
+  const marksMatch=text.match(/Total\s*Marks\s*:\s*(\d+)/i);
+  const dateMatch=text.match(/Exam\s*Date\s*:\s*([^|\n]+)/i);
+  return {cls:classMatch&&classMatch[1].trim(),subject:subjectMatch&&subjectMatch[1].trim(),marks:marksMatch&&marksMatch[1],date:dateMatch&&dateMatch[1].trim()};
+}
 function usePtsTextInPaper(){
-  const text=document.getElementById("ptsExtractedText").value.trim();
-  if(!text){alert("Pehle file extract karein ya text paste karein.");return;}
+  const field=document.getElementById("ptsExtractedText");
+  const raw=field.value.trim();
+  if(!raw){alert("Pehle Google se copied paper text yahan paste karein.");return;}
+  const text=cleanCopiedPaperText(raw);
+  const meta=extractPaperMeta(text);
+  if(meta.cls)document.getElementById("className").value=meta.cls;
+  if(meta.subject)document.getElementById("subject").value=meta.subject;
+  if(meta.marks)document.getElementById("marks").value=meta.marks;
+  const title=document.getElementById("testTitle");
+  title.value="EXAMINATION PAPER";
   const q=document.getElementById("questions");
   q.value=q.value.trim()?q.value.trim()+"\n\n"+text:text;
+  document.getElementById("language").value=/[\u0600-\u06ff]/.test(text)?"Dual Medium":"English";
   saveFormState();updatePreview();
-  document.getElementById("ptsImportStatus").textContent="Imported text PDF Designer mein add ho gaya. Preview check karein.";
+  document.getElementById("ptsImportStatus").textContent="Copied paper text formatted with preserved question order. Heading details filled where detected. Preview ko review karein.";
 }
 function addPtsTextAsQuestion(){
   const field=document.getElementById("ptsExtractedText");
