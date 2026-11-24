@@ -30,7 +30,10 @@ button{padding:12px 15px;border:0;border-radius:8px;background:#2563eb;color:whi
 .paper-head{text-align:center;border-bottom:2px solid #172554;padding-bottom:12px}
 .paper-head h2{font-size:21px;margin:6px}
 .paper-logo{max-width:65px;max-height:65px;object-fit:contain}
-.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:14px}
+.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:18px;display:inline-block;width:49%;vertical-align:top}.paper-line.section-line{background:#eaf0f8;padding:7px 10px;border-radius:5px;color:#172554}.paper-line.question-line{break-inside:avoid}.paper-line.meta-line{font-size:12px;color:#334155}.paper-line.blank-line{height:7px;min-height:7px;margin:0}
+.paper-line.urdu-line{font-family:Arial,'Noto Naskh Arabic',sans-serif;text-align:right;direction:rtl}.paper-line.mcq-instruction{font-weight:700;margin:8px 0}
+#previewDetails{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 15px;font-size:12px}
+@media print{.paper-line{break-inside:avoid}.paper-line.section-line{background:#eaf0f8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .watermark{position:absolute;top:45%;left:10%;width:80%;text-align:center;transform:rotate(-35deg);font-size:35px;font-weight:bold;color:rgba(20,35,65,.10);pointer-events:none;overflow-wrap:anywhere}
 #preview.premium{border:5px double #b18a43}
 #preview.premium .paper-head{border-color:#b18a43}
@@ -145,65 +148,50 @@ main{padding:0;margin:0}
 <div class="paper-body" id="previewQuestions">Your test questions will appear here.</div>
 </div>
 </section>
-  <section class="panel">
-<h2>📝 Create New Test</h2>
-<p class="muted">Configure your test paper.</p>
-
+  <section class="panel" id="paperSetup">
+<h2>🧭 PTS-Style Paper Setup</h2>
+<p class="muted">PTS ke demonstrated workflow ke mutabiq paper ka blueprint tayyar karein. Ye setup aapki authorized question-bank selection ko organize karta hai; PTS se direct login/API connection nahi karta aur missing questions khud se invent nahi karta.</p>
+<label>Board / Curriculum</label>
+<select id="boardName">
+<option>Punjab Textbook Board (PTB)</option>
+<option>Punjab SNC 2025</option>
+<option>Custom / Other</option>
+</select>
 <label>Class</label>
 <select id="createClass">
 <option value="">Select Class</option>
-<option>Class 1</option>
-<option>Class 2</option>
-<option>Class 3</option>
-<option>Class 4</option>
-<option>Class 5</option>
-<option>Class 6</option>
-<option>Class 7</option>
-<option>Class 8</option>
-<option>Class 9</option>
-<option>Class 10</option>
-<option>Intermediate Part 1</option>
-<option>Intermediate Part 2</option>
+<option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option><option>Intermediate Part 1</option><option>Intermediate Part 2</option>
 </select>
-
 <label>Subject</label>
-<input id="createSubject" placeholder="Enter subject">
-
-<label>Chapter / Exercise</label>
-<input id="createChapter" placeholder="Enter chapter or exercise">
-
-<label>MCQs Quantity</label>
-<input id="mcqCount" type="number" min="0" value="10">
-
-<label>Short Questions Quantity</label>
-<input id="shortCount" type="number" min="0" value="5">
-
-<label>Long Questions Quantity</label>
-<input id="longCount" type="number" min="0" value="3">
-
-<label>Syllabus Mode</label>
-<select id="syllabusMode">
-<option>Smart Syllabus</option>
-<option>Full Syllabus</option>
-</select>
-
+<input id="createSubject" placeholder="e.g. Mathematics">
+<label>Chapters / Units / Exercises</label>
+<textarea id="createChapter" placeholder="e.g. Unit 2, Exercise 2.1; Unit 7, Exercise 7.3"></textarea>
+<div class="grid">
+<div><label>Syllabus Coverage</label><select id="syllabusMode"><option>Smart Syllabus</option><option>Full Syllabus</option><option>Selected Chapters</option></select></div>
+<div><label>Question Selection</label><select id="selectionMode"><option>Manual Selection</option><option>Random Selection</option><option>Smart Selection</option></select></div>
+</div>
 <label>Paper Language</label>
-<select id="paperLanguage">
-<option>Dual Medium</option>
-<option>English</option>
-<option>Urdu</option>
-</select>
-
-<button class="primary" onclick="prepareTest()">Prepare Test Configuration</button>
-<div id="testResult" class="muted"></div>
+<select id="paperLanguage"><option>Dual Medium (English + Urdu)</option><option>English</option><option>Urdu</option></select>
+<h3>Question Distribution</h3>
+<div class="grid">
+<div><label>MCQs — Quantity</label><input id="mcqCount" type="number" min="0" value="10"></div>
+<div><label>Marks per MCQ</label><input id="mcqMarks" type="number" min="1" value="1"></div>
+<div><label>Short Questions — Quantity</label><input id="shortCount" type="number" min="0" value="5"></div>
+<div><label>Marks per Short Question</label><input id="shortMarks" type="number" min="1" value="2"></div>
+<div><label>Long Questions — Quantity</label><input id="longCount" type="number" min="0" value="3"></div>
+<div><label>Marks per Long Question</label><input id="longMarks" type="number" min="1" value="5"></div>
+</div>
+<button class="primary" onclick="prepareTest()">Prepare Paper Blueprint</button>
+<div id="testResult" class="muted" aria-live="polite"></div>
+<p class="muted">Important: PTS ka asli question bank aur uski availability aapke authorized PTS account mein hi rahegi. Yahan sirf woh questions add/import karein jinhein use karne ki ijazat ho. Manual/Random selection tabhi meaningful hogi jab aap question bank se questions provide karein.</p>
 </section>
   <section class="panel">
 <h2>📥 Import PTS Paper</h2>
-<p class="muted">PTS se apna authorized paper PDF, Word (DOCX), ya text file mein download karein. File yahan select karein; text isi device par extract hoga. Koi file server par upload nahi hoti.</p>
+<p class="muted">Apne authorized PTS material ki PDF, Word (DOCX), ya TXT file import karein. Extraction isi device par hoti hai; scanned PDFs aur complex Urdu layouts ki accuracy guaranteed nahi.</p>
 <label>Choose PTS Paper (PDF / DOCX / TXT)</label>
 <input id="ptsImportFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
 <button class="primary" id="extractPtsBtn" onclick="extractPtsFile()">Extract Paper Text</button>
-<p class="muted" id="ptsImportStatus" aria-live="polite">Google se copied text bhi paste kar sakte hain. Urdu text ki copy-order repair aur question/section line formatting apply hoti hai; final paper zaroor review karein.</p>
+<p class="muted" id="ptsImportStatus" aria-live="polite">Original PTS PDF/DOCX ko prefer karein. PDF text extraction layout/Urdu order ko badal sakti hai; imported text ko original ke saath verify karein.</p>
 <label>Extracted / Review Text</label>
 <textarea id="ptsExtractedText" style="min-height:220px" placeholder="Extracted PTS paper text yahan nazar ayega. Import ke baad zaroor review karein."></textarea>
 <button class="primary" onclick="usePtsTextInPaper()">Use in PDF Designer</button>
@@ -235,26 +223,38 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.9</footer>
+<footer>Smart Test Maker • Version 2.0</footer>
 
 <script>
 function prepareTest(){
-const cls=document.getElementById("createClass").value;
-const subject=document.getElementById("createSubject").value;
-const chapter=document.getElementById("createChapter").value;
-if(!cls||!subject){
-alert("Please select class and enter subject.");
-return;
-}
+const get=id=>document.getElementById(id).value;
+const cls=get("createClass"), subject=get("createSubject").trim();
+if(!cls||!subject){alert("Class aur subject select/enter karein.");return;}
+const counts=[
+{type:"MCQs",count:Number(get("mcqCount")),marks:Number(get("mcqMarks"))},
+{type:"Short questions",count:Number(get("shortCount")),marks:Number(get("shortMarks"))},
+{type:"Long questions",count:Number(get("longCount")),marks:Number(get("longMarks"))}
+];
+if(counts.some(x=>!Number.isInteger(x.count)||x.count<0||!Number.isInteger(x.marks)||x.marks<1)){alert("Question quantities aur marks sahi enter karein.");return;}
+const total=counts.reduce((n,x)=>n+x.count*x.marks,0);
+const board=get("boardName"), chapters=get("createChapter").trim();
+document.getElementById("className").value=cls;
+document.getElementById("subject").value=subject;
+document.getElementById("marks").value=String(total);
+document.getElementById("testTitle").value="EXAMINATION PAPER";
+document.getElementById("language").value=get("paperLanguage").startsWith("Dual")?"Dual Medium":get("paperLanguage");
+document.getElementById("testTime").value=document.getElementById("testTime").value||"";
+saveFormState();updatePreview();
 const result=document.getElementById("testResult");
-result.textContent=
-"Configuration ready: "+cls+" | "+subject+
-" | Chapter: "+chapter+
-" | MCQs: "+document.getElementById("mcqCount").value+
-" | Short: "+document.getElementById("shortCount").value+
-" | Long: "+document.getElementById("longCount").value+
-" | "+document.getElementById("syllabusMode").value+
-" | "+document.getElementById("paperLanguage").value;
+result.innerHTML="";
+const heading=document.createElement("strong");heading.textContent="Paper blueprint ready";
+const details=document.createElement("p");
+details.textContent=board+" | "+cls+" | "+subject+" | "+(chapters||"No chapter filter")+
+" | "+get("syllabusMode")+" | "+get("selectionMode");
+const distribution=document.createElement("p");
+distribution.textContent=counts.map(x=>x.type+": "+x.count+" × "+x.marks+" = "+(x.count*x.marks)+" marks").join(" • ")+" | Total: "+total+" marks";
+const note=document.createElement("p");note.textContent="Next: authorized PTS questions ko import/review karein ya Question Paper Builder mein manually add karein. Blueprint questions generate nahi karta.";
+result.append(heading,details,distribution,note);
 }
   let paperQuestions=[];
 try{
@@ -420,7 +420,7 @@ watermark.textContent=document.getElementById("watermark").value==="yes"?
 let preview=document.getElementById("preview");
 preview.className=document.getElementById("design").value==="premium"?"premium":"";
 }
-const TEST_FORM_IDS=["institution","design","testTitle","className","subject","testTime","marks","questions","watermarkText","language","fontSize","watermark","createClass","createSubject","createChapter","mcqCount","shortCount","longCount","syllabusMode","paperLanguage"];
+const TEST_FORM_IDS=["institution","design","testTitle","className","subject","testTime","marks","questions","watermarkText","language","fontSize","watermark","createClass","createSubject","createChapter","mcqCount","shortCount","longCount","syllabusMode","paperLanguage","boardName","selectionMode","mcqMarks","shortMarks","longMarks"];
 function getCurrentTestState(){
   const fields={};
   TEST_FORM_IDS.forEach(id=>{
@@ -533,7 +533,7 @@ function restoreFormState(){
   }catch(e){}
 }
 function saveFormState(){
-  const ids=["institution","design","testTitle","className","subject","testTime","marks","questions","watermarkText","language","fontSize","watermark","createClass","createSubject","createChapter","mcqCount","shortCount","longCount","syllabusMode","paperLanguage"];
+  const ids=["institution","design","testTitle","className","subject","testTime","marks","questions","watermarkText","language","fontSize","watermark","createClass","createSubject","createChapter","mcqCount","shortCount","longCount","syllabusMode","paperLanguage","boardName","selectionMode","mcqMarks","shortMarks","longMarks"];
   const state={};
   ids.forEach(id=>{
     const el=document.getElementById(id);
@@ -585,7 +585,18 @@ async function extractPtsFile(){
         status.textContent="PDF page "+i+" / "+pdf.numPages+" read ho raha hai…";
         const page=await pdf.getPage(i);
         const data=await page.getTextContent();
-        pages.push(data.items.map(x=>x.str).join(" "));
+        // Rebuild approximate visual lines from PDF coordinates instead of flattening
+        // every text item into one long space-separated paragraph.
+        const rows=[];
+        data.items.filter(x=>x.str&&x.str.trim()).forEach(item=>{
+          const y=Math.round(item.transform[5]/3)*3;
+          const x=item.transform[4];
+          let row=rows.find(r=>Math.abs(r.y-y)<=3);
+          if(!row){row={y,items:[]};rows.push(row);}
+          row.items.push({x,str:item.str.trim()});
+        });
+        rows.sort((a,b)=>b.y-a.y);
+        pages.push(rows.map(row=>row.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join("   ")).join("\n"));
       }
       extracted=pages.join("\n\n");
     }else throw new Error("Sirf PDF, DOCX aur TXT files supported hain.");
@@ -598,12 +609,12 @@ async function extractPtsFile(){
   }
 }
 function repairUrduBidiText(text){
-  // Some PDF/Google copy operations expose Urdu glyph runs in reverse visual order.
-  // Reverse only Urdu-script runs; leave English, numerals and formula runs untouched.
-  return String(text||"").replace(/[\u0600-\u06FF][\u0600-\u06FF\s،۔؟؛:()\[\]{}،٪٫٬ـ\-]*/g,run=>Array.from(run).reverse().join(""));
+  // Never reverse Urdu characters: Unicode logical order must be preserved.
+  // Browser bidirectional rendering handles direction; reversing code points corrupts words.
+  return String(text||"");
 }
 function cleanCopiedPaperText(raw){
-  // Keep every source character while repairing common spacing and Urdu bidi copy order.
+  // Preserve source character order; normalize only whitespace and line breaks.
   let text=String(raw||"").replace(/\r\n?/g,"\n").replace(/[\u00a0\u2007\u202f]/g," ");
   text=text.replace(/[ \t]+\n/g,"\n").replace(/\n[ \t]+/g,"\n");
   text=text.split("\n").map(line=>line.replace(/[ \t]{2,}/g," ").trim()).join("\n");
@@ -615,15 +626,22 @@ function cleanCopiedPaperText(raw){
 function renderPaperText(text){
   const host=document.getElementById("previewQuestions");
   host.replaceChildren();
-  const lines=String(text||"").split("\n");
-  lines.forEach(line=>{
+  const lines=String(text||"").replace(/\r\n?/g,"\n").split("\n");
+  lines.forEach(raw=>{
+    const line=raw.trim();
     const el=document.createElement("div");
     el.className="paper-line";
     el.textContent=line||" ";
-    el.dir=/[\u0600-\u06FF]/.test(line)&&!/[A-Za-z]/.test(line)?"rtl":"auto";
-    if(/^\s*(OBJECTIVE PART|SUBJECTIVE PART|Objective Part|Subjective Part)\s*$/i.test(line))el.classList.add("section-line");
-    if(/^\s*(Q\s*\d+\s*\.|\d+\.)/.test(line))el.classList.add("question-line");
-    if(/^\s*\([A-D]\)/i.test(line)||/^\s*[A-D]\s*[).]/i.test(line))el.classList.add("option-line");
+    const hasUrdu=/[\u0600-\u06FF]/.test(line);
+    const hasLatin=/[A-Za-z]/.test(line);
+    if(hasUrdu&&!hasLatin){el.dir="rtl";el.classList.add("urdu-line");}
+    else el.dir="auto";
+    if(!line){el.classList.add("blank-line");}
+    if(/^(SECTION\s*[A-Z0-9]|OBJECTIVE|SUBJECTIVE|MULTIPLE CHOICE|SHORT QUESTIONS?|LONG QUESTIONS?|PART\s*[A-Z0-9]|حصہ|معروضی|انشائیہ)/i.test(line))el.classList.add("section-line");
+    if(/^(Q\s*\d+\s*[.)]|Question\s*\d+|\d+\s*[.)])\s*/i.test(line))el.classList.add("question-line");
+    if(/^\s*(\([A-Da-d]\)|[A-Da-d]\s*[).]|[A-Da-d]\s*[-:])/.test(line))el.classList.add("option-line");
+    if(/^(Choose|Select|Tick|Attempt|Answer|نوٹ|ہدایات)/i.test(line))el.classList.add("mcq-instruction");
+    if(/^(Class|Subject|Paper Code|Exam Date|Time Allowed|Total Marks)\s*:/i.test(line))el.classList.add("meta-line");
     host.appendChild(el);
   });
 }
