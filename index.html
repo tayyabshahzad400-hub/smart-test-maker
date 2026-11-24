@@ -52,7 +52,7 @@ main{padding:0;margin:0}
 .watermark{position:fixed}
 @page{size:A4;margin:0}
 }
-</style>
+.ai-paper-document{position:relative;overflow:hidden}.ai-paper-watermark{position:absolute;top:42%;left:8%;width:84%;text-align:center;transform:rotate(-34deg);font-size:38px;font-weight:800;color:rgba(25,45,80,.10);pointer-events:none;z-index:0}.ai-paper-header,.ai-paper-meta,.ai-paper-question,.ai-paper-instructions,.ai-paper-section,.ai-paper-footer{position:relative;z-index:1}.ai-paper-card{border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin-top:12px;background:#f8fafc}.ai-paper-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #94a3b8;margin:12px 0}.ai-paper-meta div{padding:7px;border:1px solid #cbd5e1;min-width:0}.ai-paper-meta b{display:block;font-size:10px;color:#475569;text-transform:uppercase}.ai-paper-meta span{font-weight:600;overflow-wrap:anywhere}.ai-paper-section{margin:18px 0 8px;padding:8px;text-align:center;background:#eaf0f8;border:1px solid #94a3b8;font-weight:800}.ai-paper-question{margin:10px 0;break-inside:avoid}.ai-paper-question p{margin:3px 0}.ai-paper-options{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin:5px 0 5px 18px}.ai-paper-option{padding:3px 5px}.ai-paper-urdu{font-family:'Noto Nastaliq Urdu','Noto Naskh Arabic',serif;line-height:2.25;text-align:right;direction:rtl}.ai-paper-mixed{unicode-bidi:plaintext}.ai-paper-instructions{margin:10px 0;padding-left:22px}@media(max-width:520px){.ai-paper-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-paper-options{grid-template-columns:1fr}}</style>
 </head>
 <body>
 <header>
@@ -61,6 +61,25 @@ main{padding:0;margin:0}
 </header>
 <main>
 <section class="panel">
+<section class="panel" id="automaticAiPaper">
+<h2>🤖 Generate New Paper with AI</h2>
+<p class="muted">PTS ki original downloaded PDF upload karein. Secure backend us PDF ko AI ko bhej kar usi academic standard aur paper structure par naya paper banayega, aur aapki school branding apply karega.</p>
+<label>Original PTS PDF</label><input id="aiReferencePdf" type="file" accept=".pdf,application/pdf">
+<div class="grid"><div><label>Your School / Academy Name</label><input id="aiSchoolName" placeholder="IQRA HUFFAZ SECONDARY SCHOOL"></div><div><label>Watermark</label><input id="aiWatermark" placeholder="Your school name"></div></div>
+<label>School Address (optional)</label><input id="aiSchoolAddress" placeholder="School address">
+<div class="grid"><div><label>Paper Language</label><select id="aiPaperLanguage"><option>Same as reference paper</option><option>English</option><option>Urdu</option><option>Dual Medium (English + Urdu)</option></select></div><div><label>Paper Design</label><select id="aiPaperDesign"><option>Match reference style, professionally polished</option><option>Premium modern school exam design</option><option>Elegant academy exam design</option></select></div></div>
+<label>Extra instructions (optional)</label><textarea id="aiExtraInstructions" placeholder="e.g. Keep the same number of MCQs and short questions."></textarea>
+<label>Secure AI backend URL</label><input id="aiBackendUrl" placeholder="https://your-worker-name.your-subdomain.workers.dev">
+<label>Private app access password</label><input id="aiBackendPassword" type="password" autocomplete="off" placeholder="Enter the password configured in Cloudflare Worker">
+<button class="primary" id="aiGenerateButton" onclick="generateNewPaperWithAI()">✨ Generate New Paper</button>
+<p class="muted" id="aiGenerationStatus" aria-live="polite">Backend connection is required. Your API key stays on the server; do not paste it here.</p>
+<div id="aiGeneratedResult" hidden>
+<h3>Generated Paper — Review Before Printing</h3>
+<div class="ai-paper-card" id="aiGeneratedPaperPreview"></div>
+<button class="primary" onclick="printGeneratedAiPaper()">🖨️ Print / Save Generated Paper as PDF</button>
+</div>
+<p class="muted">PDF limit: 18 MB. AI-generated questions, Urdu, formulas and marks must be checked by a teacher before printing. Do not upload student personal information.</p>
+</section>
 <section class="panel" id="aiReferenceWorkflow">
 <h2>✨ AI Paper Regeneration</h2>
 <p class="muted">PTS se download ki hui original PDF ko reference banayein. Yahan text extract ya Urdu ko dobara construct nahi kiya jata. Original file ko ChatGPT mein attach karein aur neeche diye gaye instructions use karein.</p>
@@ -240,9 +259,88 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 2.3</footer>
+<footer>Smart Test Maker • Version 2.4</footer>
 
 <script>
+function escapeAiHtml(value){
+ return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+function aiTextClass(value){
+ const text=String(value??"");
+ const hasUrdu=/[\u0600-\u06FF]/.test(text),hasLatin=/[A-Za-z]/.test(text);
+ return hasUrdu&&!hasLatin?"ai-paper-urdu":"ai-paper-mixed";
+}
+function buildGeneratedPaperMarkup(paper,brand){
+ const meta=[
+  ["Class",paper.className],["Paper Code",paper.paperCode],["Subject",paper.subject],["Time Allowed",paper.timeAllowed],
+  ["Total Marks",paper.totalMarks],["Exam Date",paper.examDate],["Exam Syllabus",paper.syllabus]
+ ].filter(x=>String(x[1]||"").trim());
+ const metaHtml=meta.map(x=>'<div><b>'+escapeAiHtml(x[0])+'</b><span>'+escapeAiHtml(x[1])+'</span></div>').join("");
+ const instructions=Array.isArray(paper.instructions)?paper.instructions:[];
+ const instructionsHtml=instructions.length?'<ol class="ai-paper-instructions">'+instructions.map(x=>'<li class="'+aiTextClass(x)+'">'+escapeAiHtml(x)+'</li>').join("")+'</ol>':"";
+ const sections=(paper.sections||[]).map(section=>{
+  const questions=(section.questions||[]).map(q=>{
+   const options=Array.isArray(q.options)&&q.options.length?'<div class="ai-paper-options">'+q.options.map(o=>'<div class="ai-paper-option '+aiTextClass(o)+'">'+escapeAiHtml(o)+'</div>').join("")+'</div>':"";
+   return '<div class="ai-paper-question"><p><strong>'+escapeAiHtml(q.number||"")+'.</strong> <span class="'+aiTextClass(q.text)+'">'+escapeAiHtml(q.text)+'</span> <strong>('+escapeAiHtml(q.marks||"")+' marks)</strong></p>'+options+'</div>';
+  }).join("");
+  return '<section><div class="ai-paper-section">'+escapeAiHtml(section.title||"SECTION")+(section.marks?' — '+escapeAiHtml(section.marks)+' marks':"")+'</div>'+questions+'</section>';
+ }).join("");
+ return '<article class="ai-paper-document"><div class="ai-paper-watermark">'+escapeAiHtml(brand.watermark||brand.school)+'</div><header class="ai-paper-header"><h1>'+escapeAiHtml(brand.school)+'</h1>'+(brand.address?'<p>'+escapeAiHtml(brand.address)+'</p>':"")+'<h2>'+escapeAiHtml(paper.title||"EXAMINATION PAPER")+'</h2></header><div class="ai-paper-meta">'+metaHtml+'</div>'+instructionsHtml+sections+'<footer class="ai-paper-footer">'+escapeAiHtml(brand.school)+' • '+escapeAiHtml(paper.className||"")+' • '+escapeAiHtml(paper.paperCode||"")+'</footer></article>';
+}
+function getAiBrand(){
+ return {school:document.getElementById("aiSchoolName").value.trim(),address:document.getElementById("aiSchoolAddress").value.trim(),watermark:document.getElementById("aiWatermark").value.trim()||document.getElementById("aiSchoolName").value.trim()};
+}
+async function generateNewPaperWithAI(){
+ const file=document.getElementById("aiReferencePdf").files[0],brand=getAiBrand();
+ const endpoint=document.getElementById("aiBackendUrl").value.trim().replace(/\/$/,"");
+ const password=document.getElementById("aiBackendPassword").value;
+ const status=document.getElementById("aiGenerationStatus"),button=document.getElementById("aiGenerateButton");
+ if(!file||file.type!=="application/pdf"){alert("Original PTS PDF select karein.");return;}
+ if(!brand.school){alert("School / Academy ka naam enter karein.");return;}
+ if(!endpoint||!/^https:\/\//i.test(endpoint)){alert("Cloudflare Worker ka complete HTTPS URL enter karein.");return;}
+ if(!password){alert("Private app access password enter karein.");return;}
+ if(file.size>18*1024*1024){alert("PDF 18 MB se chhoti honi chahiye.");return;}
+ const form=new FormData();
+ form.append("referencePdf",file,file.name);
+ form.append("school",brand.school);
+ form.append("address",brand.address);
+ form.append("watermark",brand.watermark);
+ form.append("language",document.getElementById("aiPaperLanguage").value);
+ form.append("design",document.getElementById("aiPaperDesign").value);
+ form.append("extraInstructions",document.getElementById("aiExtraInstructions").value);
+ button.disabled=true;button.textContent="Generating…";
+ status.textContent="Original PDF secure AI backend ko bheji ja rahi hai. Paper analyze aur generate hone mein kuch waqt lag sakta hai.";
+ try{
+  localStorage.setItem("stm_ai_backend_url",endpoint);
+  const response=await fetch(endpoint+"/", {method:"POST",headers:{"X-App-Password":password},body:form});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"AI backend request failed ("+response.status+").");
+  if(!data.paper||!Array.isArray(data.paper.sections))throw new Error("AI response mein valid paper nahi mila.");
+  window.stmGeneratedAiPaper=data.paper;
+  window.stmGeneratedAiBrand=brand;
+  document.getElementById("aiGeneratedPaperPreview").innerHTML=buildGeneratedPaperMarkup(data.paper,brand);
+  document.getElementById("aiGeneratedResult").hidden=false;
+  status.textContent="Paper generate ho gaya. Har question, Urdu, formulas aur marks verify karein. Model: "+(data.model||"AI");
+ }catch(error){
+  status.textContent="Generation error: "+(error.message||"Request complete nahi hui.");
+ }finally{
+  button.disabled=false;button.textContent="✨ Generate New Paper";
+ }
+}
+function printGeneratedAiPaper(){
+ const paper=window.stmGeneratedAiPaper,brand=window.stmGeneratedAiBrand;
+ if(!paper||!brand){alert("Pehle AI paper generate karein.");return;}
+ const win=window.open("","_blank");
+ if(!win){alert("Browser ne print window block kar di. Pop-ups allow karein.");return;}
+ const markup=buildGeneratedPaperMarkup(paper,brand);
+ win.onload=()=>{if(win.document.fonts&&win.document.fonts.ready)win.document.fonts.ready.then(()=>win.print());else win.print();};
+ const css="*{box-sizing:border-box}body{margin:0;padding:12mm;color:#111;font:12pt Arial,sans-serif}.ai-paper-document{position:relative;overflow:hidden}.ai-paper-watermark{position:fixed;z-index:0;top:42%;left:8%;width:84%;text-align:center;transform:rotate(-34deg);font-size:38pt;font-weight:800;color:rgba(25,45,80,.10);pointer-events:none}.ai-paper-header{text-align:center;border-bottom:2px solid #243b64;padding-bottom:10px;position:relative;z-index:1}.ai-paper-header h1{font-size:19pt;margin:0 0 4px}.ai-paper-header h2{font-size:16pt;margin:9px 0 0}.ai-paper-meta{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #94a3b8;margin:12px 0;position:relative;z-index:1}.ai-paper-meta div{padding:6px;border:1px solid #cbd5e1}.ai-paper-meta b{display:block;font-size:8pt;color:#475569;text-transform:uppercase}.ai-paper-meta span{font-weight:600;overflow-wrap:anywhere}.ai-paper-section{text-align:center;background:#eaf0f8;border:1px solid #94a3b8;padding:7px;margin:14px 0 8px;font-weight:800;break-after:avoid}.ai-paper-question{margin:9px 0;break-inside:avoid;position:relative;z-index:1}.ai-paper-question p{margin:3px 0;line-height:1.6}.ai-paper-options{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin:5px 0 5px 18px}.ai-paper-option{padding:3px;break-inside:avoid}.ai-paper-urdu{font-family:'Noto Nastaliq Urdu','Noto Naskh Arabic',serif;line-height:2.3;text-align:right;direction:rtl}.ai-paper-mixed{unicode-bidi:plaintext}.ai-paper-instructions{padding-left:22px;line-height:1.6}.ai-paper-footer{text-align:center;border-top:1px solid #cbd5e1;margin-top:18px;padding-top:6px;font-size:9pt;color:#64748b}@page{size:A4;margin:0}@media print{body{padding:12mm}.ai-paper-section{print-color-adjust:exact;-webkit-print-color-adjust:exact}}";
+ win.document.open();
+ win.document.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet"><title>'+escapeAiHtml(paper.title||"Examination Paper")+'</title><style>'+css+'</style></head><body>'+markup+'</body></html>');
+ win.document.close();
+}
+const savedAiUrl=localStorage.getItem("stm_ai_backend_url");
+if(savedAiUrl)document.getElementById("aiBackendUrl").value=savedAiUrl;
 function buildRegenerationPrompt(){
  const file=document.getElementById("referencePaperFile").files[0];
  const school=document.getElementById("regenSchoolName").value.trim();
