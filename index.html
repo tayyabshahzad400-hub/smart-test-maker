@@ -1,37 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Smart Test Maker</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f3f5fb;color:#172033;font-family:Arial,sans-serif}
+body{margin:0;background:#f2f5fa;color:#172033;font-family:Arial,sans-serif}
 header{background:#172554;color:white;padding:22px}
 header h1{margin:0;font-size:24px}
-header p{margin:8px 0 0;color:#cbd5e1}
-main{max-width:850px;margin:auto;padding:17px}
-.panel{background:white;border-radius:15px;padding:19px;margin-bottom:17px;border:1px solid #e5e7eb}
-h2{margin:0 0 9px;font-size:21px}
-h3{margin:0 0 15px}
-.muted{color:#64748b;font-size:13px;line-height:1.5}
-label{display:block;font-size:14px;font-weight:bold;margin:14px 0 7px}
-input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px}
-button{border:0;background:#2563eb;color:white;padding:13px;border-radius:9px;font-weight:bold;font-size:14px;cursor:pointer}
-.primary{width:100%;margin-top:16px}
+header p{color:#cbd5e1}
+main{max-width:950px;margin:auto;padding:16px}
+.panel{background:white;padding:19px;border-radius:13px;margin-bottom:16px;border:1px solid #e2e8f0}
+h2,h3{margin-top:0}
+label{display:block;font-weight:bold;font-size:13px;margin:13px 0 6px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:white}
+textarea{min-height:75px;resize:vertical}
+button{padding:12px 15px;border:0;border-radius:8px;background:#2563eb;color:white;font-weight:bold;cursor:pointer}
+.primary{width:100%;margin-top:15px}
 .secondary{background:#e8eefc;color:#1e40af}
 .danger{background:#fee2e2;color:#991b1b}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
-.tile{padding:17px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}
-.tile strong{display:block;margin-bottom:6px}
-.profile{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #e5e7eb}
-.logo{width:48px;height:48px;object-fit:contain;border-radius:8px;background:#f1f5f9}
-.profile-info{flex:1;min-width:0}
-.profile-info strong{display:block;overflow-wrap:anywhere}
-.small{font-size:12px;color:#64748b;margin-top:5px}
-.empty{padding:15px;background:#f8fafc;border-radius:9px;color:#64748b;font-size:14px}
-footer{text-align:center;color:#64748b;font-size:12px;padding:20px}
-@media(max-width:430px){.grid{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.muted{font-size:13px;color:#64748b;line-height:1.5}
+.profile{padding:12px 0;border-bottom:1px solid #e2e8f0;display:flex;gap:10px;align-items:center}
+.profile img{width:42px;height:42px;object-fit:contain}
+.profile div{flex:1}
+#preview{background:white;color:#111;padding:25px;border:1px solid #cbd5e1;position:relative;overflow:hidden;min-height:430px}
+.paper-head{text-align:center;border-bottom:2px solid #172554;padding-bottom:12px}
+.paper-head h2{font-size:21px;margin:6px}
+.paper-logo{max-width:65px;max-height:65px;object-fit:contain}
+.paper-body{padding-top:18px;white-space:pre-wrap;line-height:1.8}
+.watermark{position:absolute;top:45%;left:10%;width:80%;text-align:center;transform:rotate(-35deg);font-size:35px;font-weight:bold;color:rgba(20,35,65,.10);pointer-events:none;overflow-wrap:anywhere}
+#preview.premium{border:5px double #b18a43}
+#preview.premium .paper-head{border-color:#b18a43}
+#preview.premium .paper-head h2{color:#805b20}
+footer{text-align:center;color:#64748b;padding:18px;font-size:12px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}#preview{padding:15px}}
+@media print{
+body{background:white}
+header,main>.panel:not(.print-panel),footer{display:none!important}
+main{padding:0;margin:0}
+.print-panel{border:0;padding:0;margin:0}
+#preview{border:0!important;min-height:0;padding:15mm}
+.watermark{position:fixed}
+@page{size:A4;margin:0}
+}
 </style>
 </head>
 <body>
@@ -41,117 +55,175 @@ footer{text-align:center;color:#64748b;font-size:12px;padding:20px}
 </header>
 <main>
 <section class="panel">
-<h2>Welcome to Smart Test Maker</h2>
-<p class="muted">Manage institutions and prepare professional school tests from one dashboard.</p>
+<h2>🏫 Institution Profiles</h2>
+<p class="muted">Add and manage school or academy profiles.</p>
+<label>Institution Name</label>
+<input id="schoolName" placeholder="School / Academy name">
+<label>Address</label>
+<input id="schoolAddress" placeholder="Institution address">
+<label>Institution Logo</label>
+<input type="file" id="schoolLogo" accept="image/*">
+<button class="primary" onclick="addProfile()">Save Institution Profile</button>
+<div id="profiles"></div>
 </section>
 
 <section class="panel">
-<h3>📊 Dashboard</h3>
+<h2>🎨 Professional PDF Designer</h2>
+<p class="muted">Choose a design and customize your test paper.</p>
+<label>Select Institution</label>
+<select id="institution" onchange="updatePreview()">
+<option value="">Select institution</option>
+</select>
+<label>PDF Design</label>
+<select id="design" onchange="updatePreview()">
+<option value="school">Professional School Exam Style</option>
+<option value="premium">Premium Academy Style</option>
+</select>
+<label>Test Title</label>
+<input id="testTitle" value="TEST PAPER" oninput="updatePreview()">
 <div class="grid">
-<div class="tile"><strong>🏫 Institutions</strong><span class="muted" id="count">0 profiles saved</span></div>
-<div class="tile"><strong>📝 Create Test</strong><span class="muted">Test creation module coming next</span></div>
-<div class="tile"><strong>🎨 PDF Designer</strong><span class="muted">PDF design module coming next</span></div>
-<div class="tile"><strong>📂 Test History</strong><span class="muted">History module coming next</span></div>
+<div>
+<label>Class</label>
+<input id="className" placeholder="Class 9" oninput="updatePreview()">
+</div>
+<div>
+<label>Subject</label>
+<input id="subject" placeholder="Mathematics" oninput="updatePreview()">
+</div>
+</div>
+<label>Time Allowed</label>
+<input id="testTime" placeholder="2 Hours" oninput="updatePreview()">
+<label>Total Marks</label>
+<input id="marks" placeholder="50" oninput="updatePreview()">
+<label>Test Questions / Content</label>
+<textarea id="questions" placeholder="Paste your test questions here..." oninput="updatePreview()"></textarea>
+<label>Watermark Text</label>
+<input id="watermarkText" placeholder="School / Academy Name" oninput="updatePreview()">
+<label>Language</label>
+<select id="language" onchange="updatePreview()">
+<option>English</option>
+<option>Urdu</option>
+<option>Dual Medium</option>
+</select>
+<label>Font Size</label>
+<select id="fontSize" onchange="updatePreview()">
+<option value="13">Small</option>
+<option value="15" selected>Normal</option>
+<option value="17">Large</option>
+</select>
+<label>Watermark</label>
+<select id="watermark" onchange="updatePreview()">
+<option value="yes">Show Watermark</option>
+<option value="no">Hide Watermark</option>
+</select>
+<button class="primary" onclick="updatePreview()">Update PDF Preview</button>
+<button class="primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<p class="muted">Print screen mein destination ko Save as PDF select karein.</p>
+</section>
+
+<section class="panel print-panel">
+<h3>📄 Live PDF Preview</h3>
+<div id="preview">
+<div class="watermark" id="previewWatermark"></div>
+<div class="paper-head">
+<img id="previewLogo" class="paper-logo" style="display:none">
+<h2 id="previewSchool">INSTITUTION NAME</h2>
+<div id="previewAddress"></div>
+<h2 id="previewTitle">TEST PAPER</h2>
+<div id="previewDetails"></div>
+</div>
+<div class="paper-body" id="previewQuestions">Your test questions will appear here.</div>
 </div>
 </section>
-
-<section class="panel" id="institutions">
-<h3>🏫 Institution Profiles</h3>
-<p class="muted">Add your school or academy details. Saved profiles will appear below.</p>
-<label>Institution / Academy Name</label>
-<input id="schoolName" placeholder="Enter school or academy name">
-<label>Address (optional)</label>
-<input id="schoolAddress" placeholder="Enter institution address">
-<label>Upload Logo (optional)</label>
-<input id="schoolLogo" type="file" accept="image/*">
-<button class="primary" onclick="addInstitution()">+ Save Institution Profile</button>
-</section>
-
-<section class="panel">
-<h3>📋 Saved Institutions</h3>
-<div id="profileList"><div class="empty">No institution profiles saved yet.</div></div>
-</section>
-
-<footer>Smart Test Maker • Version 1.1</footer>
 </main>
+<footer>Smart Test Maker • Version 1.2</footer>
 
 <script>
-let institutions=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
-
-function renderProfiles(){
-const list=document.getElementById("profileList");
-document.getElementById("count").textContent=institutions.length+" profiles saved";
-if(!institutions.length){
-list.innerHTML='<div class="empty">No institution profiles saved yet.</div>';
-return;
-}
+let data=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
+let selectedLogo="";
+function refreshProfiles(){
+let list=document.getElementById("profiles");
+let select=document.getElementById("institution");
+select.innerHTML='<option value="">Select institution</option>';
 list.innerHTML="";
-institutions.forEach((p,i)=>{
-const item=document.createElement("div");
-item.className="profile";
-const logo=document.createElement("img");
-logo.className="logo";
-logo.alt="Institution logo";
-logo.src=p.logo||"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Ctext x='8' y='34' font-size='30'%3E🏫%3C/text%3E%3C/svg%3E";
-const info=document.createElement("div");
-info.className="profile-info";
-const name=document.createElement("strong");
-name.textContent=p.name;
-const address=document.createElement("div");
-address.className="small";
-address.textContent=p.address||"No address added";
-const del=document.createElement("button");
+data.forEach((p,i)=>{
+let option=document.createElement("option");
+option.value=i;
+option.textContent=p.name;
+select.appendChild(option);
+let row=document.createElement("div");
+row.className="profile";
+let img=document.createElement("img");
+img.src=p.logo||"";
+if(!p.logo)img.style.display="none";
+let name=document.createElement("div");
+name.textContent=p.name+" — "+(p.address||"No address");
+let del=document.createElement("button");
 del.className="danger";
 del.textContent="Delete";
-del.onclick=()=>deleteInstitution(i);
-info.append(name,address);
-item.append(logo,info,del);
-list.append(item);
+del.onclick=()=>{
+if(confirm("Delete this profile?")){
+data.splice(i,1);
+localStorage.setItem("stm_institutions",JSON.stringify(data));
+refreshProfiles();
+updatePreview();
+}
+};
+row.append(img,name,del);
+list.appendChild(row);
 });
 }
-
-function addInstitution(){
-const name=document.getElementById("schoolName").value.trim();
-const address=document.getElementById("schoolAddress").value.trim();
-const file=document.getElementById("schoolLogo").files[0];
-if(!name){alert("Please enter institution name.");return;}
-if(file && file.size>500000){
-alert("Please choose a logo smaller than 500 KB.");
-return;
-}
+function addProfile(){
+let name=document.getElementById("schoolName").value.trim();
+let address=document.getElementById("schoolAddress").value.trim();
+let file=document.getElementById("schoolLogo").files[0];
+if(!name){alert("Enter institution name.");return;}
+if(file&&file.size>500000){alert("Please use a logo smaller than 500 KB.");return;}
 function save(logo){
-institutions.push({name,address,logo});
-try{
-localStorage.setItem("stm_institutions",JSON.stringify(institutions));
-}catch(e){
-institutions.pop();
-alert("Browser storage is full. Try a smaller logo.");
-return;
-}
+data.push({name,address,logo});
+try{localStorage.setItem("stm_institutions",JSON.stringify(data));}
+catch(e){data.pop();alert("Storage full. Try a smaller logo.");return;}
 document.getElementById("schoolName").value="";
 document.getElementById("schoolAddress").value="";
 document.getElementById("schoolLogo").value="";
-renderProfiles();
-alert("Institution profile saved!");
+refreshProfiles();
+alert("Institution saved!");
 }
 if(file){
-const reader=new FileReader();
+let reader=new FileReader();
 reader.onload=()=>save(reader.result);
 reader.onerror=()=>alert("Logo could not be read.");
 reader.readAsDataURL(file);
-}else{
-save("");
+}else save("");
 }
+function updatePreview(){
+let index=document.getElementById("institution").value;
+let p=index===""?null:data[Number(index)];
+document.getElementById("previewSchool").textContent=p?p.name:"INSTITUTION NAME";
+document.getElementById("previewAddress").textContent=p?p.address:"";
+let logo=document.getElementById("previewLogo");
+logo.style.display=p&&p.logo?"inline-block":"none";
+if(p&&p.logo)logo.src=p.logo;
+document.getElementById("previewTitle").textContent=document.getElementById("testTitle").value;
+document.getElementById("previewDetails").textContent=
+"Class: "+document.getElementById("className").value+
+"     Subject: "+document.getElementById("subject").value+
+"     Time: "+document.getElementById("testTime").value+
+"     Marks: "+document.getElementById("marks").value;
+document.getElementById("previewQuestions").textContent=
+document.getElementById("questions").value||"Your test questions will appear here.";
+document.getElementById("previewQuestions").style.fontSize=
+document.getElementById("fontSize").value+"px";
+document.getElementById("previewQuestions").dir=
+document.getElementById("language").value==="Urdu"?"rtl":"auto";
+let watermark=document.getElementById("previewWatermark");
+watermark.textContent=document.getElementById("watermark").value==="yes"?
+(document.getElementById("watermarkText").value||(p?p.name:"")):"";
+let preview=document.getElementById("preview");
+preview.className=document.getElementById("design").value==="premium"?"premium":"";
 }
-
-function deleteInstitution(i){
-if(confirm("Delete this institution profile?")){
-institutions.splice(i,1);
-localStorage.setItem("stm_institutions",JSON.stringify(institutions));
-renderProfiles();
-}
-}
-renderProfiles();
+refreshProfiles();
+updatePreview();
 </script>
 </body>
 </html>
