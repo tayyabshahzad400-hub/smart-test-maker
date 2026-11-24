@@ -8,6 +8,18 @@ This backend lets the GitHub Pages app upload an original PTS PDF to Gemini for 
 
 ## One-time setup (Cloudflare + Google AI Studio)
 
+### Automatic deployment from GitHub
+
+A GitHub Actions workflow is included. To let it deploy the Worker for you:
+
+1. Create a Cloudflare API token using the **Edit Cloudflare Workers** template.
+2. In the GitHub repository, open **Settings → Secrets and variables → Actions**.
+3. Add a repository secret named `CLOUDFLARE_API_TOKEN` containing that token.
+4. Add a repository variable named `CLOUDFLARE_ACCOUNT_ID` containing your Cloudflare Account ID.
+5. Open the repository **Actions** tab, select **Deploy Smart Test Maker AI Worker**, and choose **Run workflow**. Later changes to `api/worker.js` or `wrangler.toml` on `main` deploy automatically.
+
+The workflow deploys the Worker code only. You must still add `GEMINI_API_KEY` and `APP_ACCESS_PASSWORD` as Cloudflare Worker **Secrets** in the Cloudflare dashboard after the first deployment.
+
 1. Create/sign in to a Cloudflare account and open **Workers & Pages**.
 2. Create a Worker named `smart-test-maker-ai`.
 3. Deploy this repository's `api/worker.js` as the Worker entry point (or connect the repository using Workers Builds and set the root directory to the repository).
