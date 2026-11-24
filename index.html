@@ -61,6 +61,20 @@ main{padding:0;margin:0}
 </header>
 <main>
 <section class="panel">
+<section class="panel" id="aiReferenceWorkflow">
+<h2>✨ AI Paper Regeneration</h2>
+<p class="muted">PTS se download ki hui original PDF ko reference banayein. Yahan text extract ya Urdu ko dobara construct nahi kiya jata. Original file ko ChatGPT mein attach karein aur neeche diye gaye instructions use karein.</p>
+<label>Original PTS Paper (PDF)</label><input id="referencePaperFile" type="file" accept="application/pdf,.pdf">
+<p class="muted" id="referencePaperStatus" aria-live="polite">Abhi koi reference PDF select nahi hui.</p>
+<div class="grid"><div><label>Your School / Academy Name</label><input id="regenSchoolName" placeholder="Your institution name"></div><div><label>Watermark Text</label><input id="regenWatermark" placeholder="Your school name"></div></div>
+<label>School Address (optional)</label><input id="regenSchoolAddress" placeholder="Your institution address">
+<div class="grid"><div><label>New Paper Language</label><select id="regenLanguage"><option>Same as reference paper</option><option>English</option><option>Urdu</option><option>Dual Medium (English + Urdu)</option></select></div><div><label>Paper Design</label><select id="regenDesign"><option>Match reference style, polished professionally</option><option>Premium modern school examination design</option><option>Elegant academy examination design</option></select></div></div>
+<button class="primary" onclick="buildRegenerationPrompt()">Create AI Instructions</button>
+<label>Copy these instructions into ChatGPT after attaching the original PDF</label>
+<textarea id="regenerationPrompt" style="min-height:240px" placeholder="Your tailored AI instructions will appear here..."></textarea>
+<button class="primary secondary" onclick="copyRegenerationPrompt()">Copy AI Instructions</button>
+<p class="muted">Important: GitHub Pages app khud ChatGPT ko PDF upload ya AI generation nahi kar sakta. Original PDF ChatGPT chat mein attach karein, phir yahan se instructions copy karke bhejein. Is tarah PDF ko text extraction se damage nahi kiya jayega.</p>
+</section>
 <h2>🏫 Institution Profiles</h2>
 <p class="muted">Add and manage school or academy profiles.</p>
 <label>Institution Name</label>
@@ -226,9 +240,43 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 2.2</footer>
+<footer>Smart Test Maker • Version 2.3</footer>
 
 <script>
+function buildRegenerationPrompt(){
+ const file=document.getElementById("referencePaperFile").files[0];
+ const school=document.getElementById("regenSchoolName").value.trim();
+ const watermark=document.getElementById("regenWatermark").value.trim()||school;
+ const address=document.getElementById("regenSchoolAddress").value.trim();
+ if(!file){alert("Pehle original PTS PDF select karein aur isi PDF ko ChatGPT mein bhi attach karein.");return;}
+ if(!school){alert("Apne school / academy ka naam enter karein.");return;}
+ const language=document.getElementById("regenLanguage").value,design=document.getElementById("regenDesign").value;
+ const prompt=[
+ "TASK: Create a NEW, professionally designed examination paper using the attached PDF as the visual, structural, academic-standard and formatting reference.",
+ "",
+ "REFERENCE: Inspect the attached PDF visually, page by page. Do not rely on extracted plain text alone. Match its paper architecture, section hierarchy, numbering, marks distribution, MCQ option arrangement, bilingual placement, mathematical notation, spacing and page balance. Create a genuinely new paper for the same class, subject and syllabus scope, matching difficulty and learning outcomes; do not merely rename or reproduce it verbatim. Never guess unreadable details.",
+ "",
+ "URDU AND MATHEMATICS: Preserve proper Urdu script, correct right-to-left flow and natural Nastaliq-style typography. Do not substitute Arabic wording or Arabic-looking glyphs for Urdu. Keep English and mathematical expressions correctly ordered and legible.",
+ "",
+ "REBRANDING (MANDATORY): Replace every original school/academy name, logo, address, phone number and identifying mark with these details. New institution: "+school+". Address: "+(address||"Not supplied; do not invent one")+". Watermark: "+watermark+". Remove the original institution's watermark, logo and identifying details completely. Apply the new watermark subtly on every page without reducing readability.",
+ "",
+ "OUTPUT: Language: "+language+". Design: "+design+". Deliver a polished, print-ready A4 PDF with consistent margins, readable typography, aligned MCQ options, clean page breaks, page numbers and consistent headers/footers. Keep every question, option, mark and instruction complete. Verify section-wise and total marks arithmetic. Visually review every page. Do not deliver only extracted text or an HTML mockup; deliver the finished professional PDF.",
+ "",
+ "Use the attached file only within the user's authorized rights and access."
+ ].join("\n");
+ document.getElementById("regenerationPrompt").value=prompt;
+ document.getElementById("referencePaperStatus").textContent="Selected: "+file.name+" ("+(file.size/1048576).toFixed(2)+" MB). Attach this same PDF in ChatGPT before sending the instructions.";
+}
+async function copyRegenerationPrompt(){
+ const field=document.getElementById("regenerationPrompt");
+ if(!field.value.trim()){buildRegenerationPrompt();if(!field.value.trim())return;}
+ try{await navigator.clipboard.writeText(field.value);alert("Instructions copied. Ab ChatGPT mein original PDF attach karke paste karein.");}
+ catch(e){field.focus();field.select();alert("Instructions select ho gayi hain. Copy karein, phir ChatGPT mein original PDF attach karein.");}
+}
+document.getElementById("referencePaperFile").addEventListener("change",function(){
+ const file=this.files[0];
+ document.getElementById("referencePaperStatus").textContent=file?"Selected: "+file.name+" ("+(file.size/1048576).toFixed(2)+" MB). Original file ko ChatGPT mein separately attach karein.":"Abhi koi reference PDF select nahi hui.";
+});
 function prepareTest(){
 const get=id=>document.getElementById(id).value;
 const cls=get("createClass"), subject=get("createSubject").trim();
