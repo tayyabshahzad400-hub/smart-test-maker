@@ -198,6 +198,20 @@ main{padding:0;margin:0}
 <div id="testResult" class="muted"></div>
 </section>
   <section class="panel">
+<h2>📥 Import PTS Paper</h2>
+<p class="muted">PTS se apna authorized paper PDF, Word (DOCX), ya text file mein download karein. File yahan select karein; text isi device par extract hoga. Koi file server par upload nahi hoti.</p>
+<label>Choose PTS Paper (PDF / DOCX / TXT)</label>
+<input id="ptsImportFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+<button class="primary" id="extractPtsBtn" onclick="extractPtsFile()">Extract Paper Text</button>
+<p class="muted" id="ptsImportStatus" aria-live="polite">PDF aur Word extraction ke liye internet connection zaroori hai. Urdu PDF text layout source file ke mutabiq vary kar sakta hai.</p>
+<label>Extracted / Review Text</label>
+<textarea id="ptsExtractedText" style="min-height:220px" placeholder="Extracted PTS paper text yahan nazar ayega. Import ke baad zaroor review karein."></textarea>
+<button class="primary" onclick="usePtsTextInPaper()">Use in PDF Designer</button>
+<button class="primary secondary" onclick="addPtsTextAsQuestion()">Add Selected Text as Question</button>
+<p class="muted">Imported material ko check aur edit karna aapki zimmedari hai. Smart Test Maker PTS se direct connect nahi karta aur khud se koi PTS question generate nahi karta.</p>
+</section>
+
+<section class="panel">
 <h2>📚 Question Paper Builder</h2>
 
 <label>Question Type</label>
@@ -221,7 +235,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.6</footer>
+<footer>Smart Test Maker • Version 1.7</footer>
 
 <script>
 function prepareTest(){
@@ -538,6 +552,70 @@ refreshProfiles();
 showQuestions();
 renderSavedTests();
 updatePreview();
+
+async function loadExternalScript(src){
+  return new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(s=>s.src===src);
+    if(existing){if(existing.dataset.loaded==="yes")return resolve();existing.addEventListener("load",resolve,{once:true});existing.addEventListener("error",reject,{once:true});return;}
+    const s=document.createElement("script");s.src=src;s.onload=()=>{s.dataset.loaded="yes";resolve();};s.onerror=reject;document.head.appendChild(s);
+  });
+}
+async function extractPtsFile(){
+  const file=document.getElementById("ptsImportFile").files[0];
+  const status=document.getElementById("ptsImportStatus");
+  const output=document.getElementById("ptsExtractedText");
+  if(!file){alert("Pehle PTS ki PDF, DOCX ya TXT file select karein.");return;}
+  status.textContent="File read ho rahi hai…";
+  try{
+    let extracted="";
+    const name=file.name.toLowerCase();
+    if(name.endsWith(".txt")){
+      extracted=await file.text();
+    }else if(name.endsWith(".docx")){
+      await loadExternalScript("https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js");
+      if(!window.mammoth)throw new Error("Word reader load nahi ho saka.");
+      const result=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
+      extracted=result.value||"";
+    }else if(name.endsWith(".pdf")){
+      await loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      if(!window.pdfjsLib)throw new Error("PDF reader load nahi ho saka.");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      const pages=[];
+      for(let i=1;i<=pdf.numPages;i++){
+        status.textContent="PDF page "+i+" / "+pdf.numPages+" read ho raha hai…";
+        const page=await pdf.getPage(i);
+        const data=await page.getTextContent();
+        pages.push(data.items.map(x=>x.str).join(" "));
+      }
+      extracted=pages.join("\n\n");
+    }else throw new Error("Sirf PDF, DOCX aur TXT files supported hain.");
+    output.value=extracted.trim();
+    if(!output.value)throw new Error("Is file se readable text nahi mila. Scanned/image PDF ko pehle OCR se text PDF banayein ya DOCX export karein.");
+    saveFormState();
+    status.textContent="Text extract ho gaya ("+output.value.length+" characters). Questions ko review/edit zaroor karein.";
+  }catch(e){
+    status.textContent="Import error: "+(e&&e.message?e.message:"File read nahi ho saki.");
+  }
+}
+function usePtsTextInPaper(){
+  const text=document.getElementById("ptsExtractedText").value.trim();
+  if(!text){alert("Pehle file extract karein ya text paste karein.");return;}
+  const q=document.getElementById("questions");
+  q.value=q.value.trim()?q.value.trim()+"\n\n"+text:text;
+  saveFormState();updatePreview();
+  document.getElementById("ptsImportStatus").textContent="Imported text PDF Designer mein add ho gaya. Preview check karein.";
+}
+function addPtsTextAsQuestion(){
+  const field=document.getElementById("ptsExtractedText");
+  const selected=field.value.slice(field.selectionStart,field.selectionEnd).trim();
+  const text=selected||field.value.trim();
+  if(!text){alert("Pehle extracted text mein se question select karein.");return;}
+  paperQuestions.push({type:document.getElementById("questionType").value,question:text,marks:Number(document.getElementById("questionMarks").value)||1});
+  savePaperQuestions();showQuestions();
+  document.getElementById("ptsImportStatus").textContent="Selected text Question Paper Builder mein add ho gaya.";
+}
+
 </script>
 </body>
 </html>
