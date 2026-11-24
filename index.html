@@ -135,11 +135,81 @@ main{padding:0;margin:0}
 <div class="paper-body" id="previewQuestions">Your test questions will appear here.</div>
 </div>
 </section>
+  <section class="panel">
+<h2>📝 Create New Test</h2>
+<p class="muted">Configure your test paper.</p>
+
+<label>Class</label>
+<select id="createClass">
+<option value="">Select Class</option>
+<option>Class 1</option>
+<option>Class 2</option>
+<option>Class 3</option>
+<option>Class 4</option>
+<option>Class 5</option>
+<option>Class 6</option>
+<option>Class 7</option>
+<option>Class 8</option>
+<option>Class 9</option>
+<option>Class 10</option>
+<option>Intermediate Part 1</option>
+<option>Intermediate Part 2</option>
+</select>
+
+<label>Subject</label>
+<input id="createSubject" placeholder="Enter subject">
+
+<label>Chapter / Exercise</label>
+<input id="createChapter" placeholder="Enter chapter or exercise">
+
+<label>MCQs Quantity</label>
+<input id="mcqCount" type="number" min="0" value="10">
+
+<label>Short Questions Quantity</label>
+<input id="shortCount" type="number" min="0" value="5">
+
+<label>Long Questions Quantity</label>
+<input id="longCount" type="number" min="0" value="3">
+
+<label>Syllabus Mode</label>
+<select id="syllabusMode">
+<option>Smart Syllabus</option>
+<option>Full Syllabus</option>
+</select>
+
+<label>Paper Language</label>
+<select id="paperLanguage">
+<option>Dual Medium</option>
+<option>English</option>
+<option>Urdu</option>
+</select>
+
+<button class="primary" onclick="prepareTest()">Prepare Test Configuration</button>
+<div id="testResult" class="muted"></div>
+</section>
 </main>
 <footer>Smart Test Maker • Version 1.2</footer>
 
 <script>
-let data=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
+function prepareTest(){
+const cls=document.getElementById("createClass").value;
+const subject=document.getElementById("createSubject").value;
+const chapter=document.getElementById("createChapter").value;
+if(!cls||!subject){
+alert("Please select class and enter subject.");
+return;
+}
+const result=document.getElementById("testResult");
+result.textContent=
+"Configuration ready: "+cls+" | "+subject+
+" | Chapter: "+chapter+
+" | MCQs: "+document.getElementById("mcqCount").value+
+" | Short: "+document.getElementById("shortCount").value+
+" | Long: "+document.getElementById("longCount").value+
+" | "+document.getElementById("syllabusMode").value+
+" | "+document.getElementById("paperLanguage").value;
+}
+  let data=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
 let selectedLogo="";
 function refreshProfiles(){
 let list=document.getElementById("profiles");
