@@ -30,7 +30,7 @@ button{padding:12px 15px;border:0;border-radius:8px;background:#2563eb;color:whi
 .paper-head{text-align:center;border-bottom:2px solid #172554;padding-bottom:12px}
 .paper-head h2{font-size:21px;margin:6px}
 .paper-logo{max-width:65px;max-height:65px;object-fit:contain}
-.paper-body{padding-top:18px;white-space:pre-wrap;line-height:1.8}
+.paper-body{padding-top:18px;line-height:1.75;overflow-wrap:anywhere}.paper-line{white-space:pre-wrap;unicode-bidi:plaintext;min-height:1.35em;margin:0 0 5px}.paper-line[dir=rtl]{text-align:right;font-family:Arial,'Noto Naskh Arabic',sans-serif}.paper-line.section-line{font-weight:700;text-align:center;margin:13px 0 8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px}.paper-line.question-line{font-weight:600;margin-top:9px}.paper-line.option-line{padding-left:14px}
 .watermark{position:absolute;top:45%;left:10%;width:80%;text-align:center;transform:rotate(-35deg);font-size:35px;font-weight:bold;color:rgba(20,35,65,.10);pointer-events:none;overflow-wrap:anywhere}
 #preview.premium{border:5px double #b18a43}
 #preview.premium .paper-head{border-color:#b18a43}
@@ -203,7 +203,7 @@ main{padding:0;margin:0}
 <label>Choose PTS Paper (PDF / DOCX / TXT)</label>
 <input id="ptsImportFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
 <button class="primary" id="extractPtsBtn" onclick="extractPtsFile()">Extract Paper Text</button>
-<p class="muted" id="ptsImportStatus" aria-live="polite">Google se copied text bhi yahan paste kar sakte hain. PDF extraction layout-dependent ho sakti hai; copied text ko review karein.</p>
+<p class="muted" id="ptsImportStatus" aria-live="polite">Google se copied text bhi paste kar sakte hain. Urdu text ki copy-order repair aur question/section line formatting apply hoti hai; final paper zaroor review karein.</p>
 <label>Extracted / Review Text</label>
 <textarea id="ptsExtractedText" style="min-height:220px" placeholder="Extracted PTS paper text yahan nazar ayega. Import ke baad zaroor review karein."></textarea>
 <button class="primary" onclick="usePtsTextInPaper()">Use in PDF Designer</button>
@@ -235,7 +235,7 @@ main{padding:0;margin:0}
 <h3 id="totalQuestionMarks">Total Marks: 0</h3>
 </section>
 </main>
-<footer>Smart Test Maker • Version 1.8</footer>
+<footer>Smart Test Maker • Version 1.9</footer>
 
 <script>
 function prepareTest(){
@@ -404,8 +404,7 @@ const builderText=builderSections.join("\\n\\n");
 const questionParts=[];
 if(manualQuestions)questionParts.push(manualQuestions);
 if(builderText)questionParts.push(builderText);
-document.getElementById("previewQuestions").textContent=
-questionParts.join("\\n\\n")||"Your test questions will appear here.";
+renderPaperText(questionParts.join("\n\n")||"Your test questions will appear here.");
 const enteredMarks=document.getElementById("marks").value.trim();
 const builderTotal=paperQuestions.reduce((sum,q)=>sum+q.marks,0);
 if(!enteredMarks&&builderTotal>0){
@@ -598,14 +597,35 @@ async function extractPtsFile(){
     status.textContent="Import error: "+(e&&e.message?e.message:"File read nahi ho saki.");
   }
 }
+function repairUrduBidiText(text){
+  // Some PDF/Google copy operations expose Urdu glyph runs in reverse visual order.
+  // Reverse only Urdu-script runs; leave English, numerals and formula runs untouched.
+  return String(text||"").replace(/[\u0600-\u06FF][\u0600-\u06FF\s،۔؟؛:()\[\]{}،٪٫٬ـ\-]*/g,run=>Array.from(run).reverse().join(""));
+}
 function cleanCopiedPaperText(raw){
-  // Preserve original wording and line order; repair only common copy/paste spacing.
+  // Keep every source character while repairing common spacing and Urdu bidi copy order.
   let text=String(raw||"").replace(/\r\n?/g,"\n").replace(/[\u00a0\u2007\u202f]/g," ");
   text=text.replace(/[ \t]+\n/g,"\n").replace(/\n[ \t]+/g,"\n");
   text=text.split("\n").map(line=>line.replace(/[ \t]{2,}/g," ").trim()).join("\n");
-  text=text.replace(/(\bQ\s*\d+\s*\.)/gi,"\n$1");
+  text=repairUrduBidiText(text);
+  text=text.replace(/(^|\n)\s*(Q\s*\d+\s*\.)/gi,"$1\n$2");
   text=text.replace(/\n{3,}/g,"\n\n").trim();
   return text;
+}
+function renderPaperText(text){
+  const host=document.getElementById("previewQuestions");
+  host.replaceChildren();
+  const lines=String(text||"").split("\n");
+  lines.forEach(line=>{
+    const el=document.createElement("div");
+    el.className="paper-line";
+    el.textContent=line||" ";
+    el.dir=/[\u0600-\u06FF]/.test(line)&&!/[A-Za-z]/.test(line)?"rtl":"auto";
+    if(/^\s*(OBJECTIVE PART|SUBJECTIVE PART|Objective Part|Subjective Part)\s*$/i.test(line))el.classList.add("section-line");
+    if(/^\s*(Q\s*\d+\s*\.|\d+\.)/.test(line))el.classList.add("question-line");
+    if(/^\s*\([A-D]\)/i.test(line)||/^\s*[A-D]\s*[).]/i.test(line))el.classList.add("option-line");
+    host.appendChild(el);
+  });
 }
 function extractPaperMeta(text){
   const classMatch=text.match(/Class\s*Name\s*:\s*([^|\n]+)/i);
