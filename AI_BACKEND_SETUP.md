@@ -26,7 +26,7 @@ The workflow deploys the Worker code only. You must still add `GEMINI_API_KEY` a
 4. In Worker **Settings → Variables and Secrets**, add these as **Secret** values:
    - `GEMINI_API_KEY` — create an API key in Google AI Studio.
    - `APP_ACCESS_PASSWORD` — create a long, private password (at least 12 characters). Do not use your GitHub or Google password.
-5. Keep `GEMINI_MODEL` as `gemini-2.5-flash` initially. It can be changed later in Worker variables if Google changes model availability.
+5. Keep `GEMINI_MODEL` as `gemini-3.8-flash` initially. It can be changed later in Worker variables if Google changes model availability.
 6. Deploy the Worker and copy its `workers.dev` URL.
 7. Open Smart Test Maker → **Generate New Paper with AI**, paste the Worker URL, and enter the same private app access password. The password is not saved by the app.
 
