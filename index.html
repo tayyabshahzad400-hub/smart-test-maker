@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,28 +6,32 @@
 <title>Smart Test Maker</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f6fb;color:#172033}
-header{background:#172554;color:white;padding:20px}
-header h1{margin:0;font-size:23px}
-header p{margin:7px 0 0;color:#cbd5e1;font-size:13px}
-.container{max-width:1100px;margin:auto;padding:18px}
-.welcome{background:white;padding:20px;border-radius:14px;margin-bottom:18px}
-.welcome h2{margin:0 0 7px;font-size:21px}
-.muted{color:#64748b;font-size:13px}
-.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
-.card{background:white;padding:17px;border-radius:13px;border:1px solid #e5e7eb}
-.card strong{display:block;font-size:17px;margin-bottom:6px}
-.card span{font-size:12px;color:#64748b}
-.section{background:white;border-radius:14px;padding:20px;margin-bottom:18px}
-.section h3{margin:0 0 16px}
-label{display:block;font-size:13px;font-weight:bold;margin:13px 0 7px}
-input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:white;font-size:14px}
-button{border:0;border-radius:8px;padding:12px 16px;background:#2563eb;color:white;font-weight:bold;font-size:14px;margin-top:15px;width:100%}
-button.secondary{background:#e8eefc;color:#1e40af}
-.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.menu button{margin:0}
-footer{text-align:center;padding:20px;color:#64748b;font-size:12px}
-@media(min-width:650px){.cards{grid-template-columns:repeat(4,1fr)}.menu{grid-template-columns:repeat(3,1fr)}}
+body{margin:0;background:#f3f5fb;color:#172033;font-family:Arial,sans-serif}
+header{background:#172554;color:white;padding:22px}
+header h1{margin:0;font-size:24px}
+header p{margin:8px 0 0;color:#cbd5e1}
+main{max-width:850px;margin:auto;padding:17px}
+.panel{background:white;border-radius:15px;padding:19px;margin-bottom:17px;border:1px solid #e5e7eb}
+h2{margin:0 0 9px;font-size:21px}
+h3{margin:0 0 15px}
+.muted{color:#64748b;font-size:13px;line-height:1.5}
+label{display:block;font-size:14px;font-weight:bold;margin:14px 0 7px}
+input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px}
+button{border:0;background:#2563eb;color:white;padding:13px;border-radius:9px;font-weight:bold;font-size:14px;cursor:pointer}
+.primary{width:100%;margin-top:16px}
+.secondary{background:#e8eefc;color:#1e40af}
+.danger{background:#fee2e2;color:#991b1b}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+.tile{padding:17px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}
+.tile strong{display:block;margin-bottom:6px}
+.profile{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #e5e7eb}
+.logo{width:48px;height:48px;object-fit:contain;border-radius:8px;background:#f1f5f9}
+.profile-info{flex:1;min-width:0}
+.profile-info strong{display:block;overflow-wrap:anywhere}
+.small{font-size:12px;color:#64748b;margin-top:5px}
+.empty{padding:15px;background:#f8fafc;border-radius:9px;color:#64748b;font-size:14px}
+footer{text-align:center;color:#64748b;font-size:12px;padding:20px}
+@media(max-width:430px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -36,46 +39,119 @@ footer{text-align:center;padding:20px;color:#64748b;font-size:12px}
 <h1>📘 Smart Test Maker</h1>
 <p>Professional School Test Management System</p>
 </header>
-<main class="container">
-<div class="welcome">
+<main>
+<section class="panel">
 <h2>Welcome to Smart Test Maker</h2>
-<p class="muted">Create, design and manage your school tests from one place.</p>
-</div>
+<p class="muted">Manage institutions and prepare professional school tests from one dashboard.</p>
+</section>
 
-<div class="cards">
-<div class="card"><strong>📝 Create Test</strong><span>Generate a new test</span></div>
-<div class="card"><strong>🏫 Institutions</strong><span>Manage institution profiles</span></div>
-<div class="card"><strong>🎨 PDF Designer</strong><span>Customize your PDF</span></div>
-<div class="card"><strong>📂 Test History</strong><span>View previous tests</span></div>
+<section class="panel">
+<h3>📊 Dashboard</h3>
+<div class="grid">
+<div class="tile"><strong>🏫 Institutions</strong><span class="muted" id="count">0 profiles saved</span></div>
+<div class="tile"><strong>📝 Create Test</strong><span class="muted">Test creation module coming next</span></div>
+<div class="tile"><strong>🎨 PDF Designer</strong><span class="muted">PDF design module coming next</span></div>
+<div class="tile"><strong>📂 Test History</strong><span class="muted">History module coming next</span></div>
 </div>
+</section>
 
-<div class="section">
-<h3>⚡ Create New Test</h3>
-<label>Institution Name</label>
-<input type="text" placeholder="Enter academy or school name">
-<label>Class</label>
-<select><option>Select Class</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option><option>Intermediate</option></select>
-<label>Subject</label>
-<input type="text" placeholder="Enter subject">
-<label>Chapter / Exercise</label>
-<input type="text" placeholder="Enter chapter or exercise">
-<label>Upload Source PDF</label>
-<input type="file" accept=".pdf">
-<button onclick="alert('Test creation module will be connected in the next development stage.')">Continue to Test Creation</button>
-</div>
+<section class="panel" id="institutions">
+<h3>🏫 Institution Profiles</h3>
+<p class="muted">Add your school or academy details. Saved profiles will appear below.</p>
+<label>Institution / Academy Name</label>
+<input id="schoolName" placeholder="Enter school or academy name">
+<label>Address (optional)</label>
+<input id="schoolAddress" placeholder="Enter institution address">
+<label>Upload Logo (optional)</label>
+<input id="schoolLogo" type="file" accept="image/*">
+<button class="primary" onclick="addInstitution()">+ Save Institution Profile</button>
+</section>
 
-<div class="section">
-<h3>⚙️ Dashboard Menu</h3>
-<div class="menu">
-<button class="secondary" onclick="alert('Institution Profiles module coming soon.')">Institution Profiles</button>
-<button class="secondary" onclick="alert('PDF Designer module coming soon.')">PDF Designer</button>
-<button class="secondary" onclick="alert('Saved Templates module coming soon.')">Saved Templates</button>
-<button class="secondary" onclick="alert('Test History module coming soon.')">Test History</button>
-<button class="secondary" onclick="alert('Automation Settings module coming soon.')">Automation Settings</button>
-<button class="secondary" onclick="alert('Settings module coming soon.')">Settings</button>
-</div>
-</div>
-<footer>Smart Test Maker • Version 1.0</footer>
+<section class="panel">
+<h3>📋 Saved Institutions</h3>
+<div id="profileList"><div class="empty">No institution profiles saved yet.</div></div>
+</section>
+
+<footer>Smart Test Maker • Version 1.1</footer>
 </main>
+
+<script>
+let institutions=JSON.parse(localStorage.getItem("stm_institutions")||"[]");
+
+function renderProfiles(){
+const list=document.getElementById("profileList");
+document.getElementById("count").textContent=institutions.length+" profiles saved";
+if(!institutions.length){
+list.innerHTML='<div class="empty">No institution profiles saved yet.</div>';
+return;
+}
+list.innerHTML="";
+institutions.forEach((p,i)=>{
+const item=document.createElement("div");
+item.className="profile";
+const logo=document.createElement("img");
+logo.className="logo";
+logo.alt="Institution logo";
+logo.src=p.logo||"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Ctext x='8' y='34' font-size='30'%3E🏫%3C/text%3E%3C/svg%3E";
+const info=document.createElement("div");
+info.className="profile-info";
+const name=document.createElement("strong");
+name.textContent=p.name;
+const address=document.createElement("div");
+address.className="small";
+address.textContent=p.address||"No address added";
+const del=document.createElement("button");
+del.className="danger";
+del.textContent="Delete";
+del.onclick=()=>deleteInstitution(i);
+info.append(name,address);
+item.append(logo,info,del);
+list.append(item);
+});
+}
+
+function addInstitution(){
+const name=document.getElementById("schoolName").value.trim();
+const address=document.getElementById("schoolAddress").value.trim();
+const file=document.getElementById("schoolLogo").files[0];
+if(!name){alert("Please enter institution name.");return;}
+if(file && file.size>500000){
+alert("Please choose a logo smaller than 500 KB.");
+return;
+}
+function save(logo){
+institutions.push({name,address,logo});
+try{
+localStorage.setItem("stm_institutions",JSON.stringify(institutions));
+}catch(e){
+institutions.pop();
+alert("Browser storage is full. Try a smaller logo.");
+return;
+}
+document.getElementById("schoolName").value="";
+document.getElementById("schoolAddress").value="";
+document.getElementById("schoolLogo").value="";
+renderProfiles();
+alert("Institution profile saved!");
+}
+if(file){
+const reader=new FileReader();
+reader.onload=()=>save(reader.result);
+reader.onerror=()=>alert("Logo could not be read.");
+reader.readAsDataURL(file);
+}else{
+save("");
+}
+}
+
+function deleteInstitution(i){
+if(confirm("Delete this institution profile?")){
+institutions.splice(i,1);
+localStorage.setItem("stm_institutions",JSON.stringify(institutions));
+renderProfiles();
+}
+}
+renderProfiles();
+</script>
 </body>
 </html>
