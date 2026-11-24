@@ -614,7 +614,7 @@ function repairUrduBidiText(text){
   return String(text||"");
 }
 function cleanCopiedPaperText(raw){
-  // Keep every source character while repairing common spacing and Urdu bidi copy order.
+  // Preserve source character order; normalize only whitespace and line breaks.
   let text=String(raw||"").replace(/\r\n?/g,"\n").replace(/[\u00a0\u2007\u202f]/g," ");
   text=text.replace(/[ \t]+\n/g,"\n").replace(/\n[ \t]+/g,"\n");
   text=text.split("\n").map(line=>line.replace(/[ \t]{2,}/g," ").trim()).join("\n");
