@@ -373,11 +373,11 @@ async function generateNewPaperWithAI(isManualRetry=false){
  const status=document.getElementById("aiGenerationStatus"),button=document.getElementById("aiGenerateButton");
  if(!isManualRetry){
   const file=document.getElementById("aiReferencePdf").files[0],brand=getAiBrand();
-  const endpoint=document.getElementById("aiBackendUrl").value.trim().replace(/\\/$/,"");
+  const endpoint=document.getElementById("aiBackendUrl").value.trim().replace(/\/$/,"");
   const password=document.getElementById("aiBackendPassword").value;
   if(!file||file.type!=="application/pdf"){alert("Original PTS PDF select karein.");return;}
   if(!brand.school){alert("School / Academy ka naam enter karein.");return;}
-  if(!endpoint||!/^https:\\/\\//i.test(endpoint)){alert("Cloudflare Worker ka complete HTTPS URL enter karein.");return;}
+  if(!endpoint||!/^https:\/\//i.test(endpoint)){alert("Cloudflare Worker ka complete HTTPS URL enter karein.");return;}
   if(!password){alert("Private app access password enter karein.");document.getElementById("aiBackendPassword").focus();return;}
   if(file.size>14*1024*1024){alert("PDF 14 MB se chhoti honi chahiye.");document.getElementById("aiReferencePdf").focus();return;}
   aiLastSubmission={file,brand,endpoint,password,settings:{language:document.getElementById("aiPaperLanguage").value,design:document.getElementById("aiPaperDesign").value,extraInstructions:document.getElementById("aiExtraInstructions").value}};
