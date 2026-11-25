@@ -121,31 +121,57 @@ export default {
       }
       const base64 = btoa(binary);
       const prompt = makePrompt({ school, address, watermark, language, design, extraInstructions });
-      const model = env.GEMINI_MODEL || "gemini-3.8-flash";
-      const apiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      const primaryModel = env.GEMINI_MODEL || "gemini-3.8-flash";
+      const fallbackModel = "gemini-3.5-flash-lite";
+      const requestBody = JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: "application/pdf", data: base64 } }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.45,
+          maxOutputTokens: 8192
+        }
+      });
+      const callGemini = async (modelName) => fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY
           },
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: "application/pdf", data: base64 } }
-              ]
-            }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.45,
-              maxOutputTokens: 8192
-            }
-          })
+          body: requestBody
         }
       );
+      const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      let model = primaryModel;
+      let apiResponse;
+      let lastNetworkError;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          apiResponse = await callGemini(primaryModel);
+          if (apiResponse.ok || ![429, 500, 502, 503, 504].includes(apiResponse.status)) break;
+        } catch (error) {
+          lastNetworkError = error;
+        }
+        if (attempt < 2) await wait(attempt === 0 ? 2000 : 5000);
+      }
+      if (!apiResponse || !apiResponse.ok && [429, 500, 502, 503, 504].includes(apiResponse.status)) {
+        try {
+          model = fallbackModel;
+          apiResponse = await callGemini(fallbackModel);
+        } catch (error) {
+          lastNetworkError = error;
+        }
+      }
+      if (!apiResponse) {
+        return json({ error: `Could not connect to the AI provider: ${(lastNetworkError?.message || "network error").slice(0, 180)}. Please try again shortly.` }, 502);
+      }
       const apiData = await apiResponse.json().catch(() => ({}));
       if (!apiResponse.ok) {
         const message = apiData?.error?.message || "AI provider rejected the request.";
