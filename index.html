@@ -72,13 +72,13 @@ main{padding:0;margin:0}
 <label>Secure AI backend URL</label><input id="aiBackendUrl" placeholder="https://your-worker-name.your-subdomain.workers.dev">
 <label>Private app access password</label><input id="aiBackendPassword" type="password" autocomplete="off" placeholder="Enter the password configured in Cloudflare Worker">
 <button class="primary" id="aiGenerateButton" onclick="generateNewPaperWithAI()">✨ Generate New Paper</button>
-<p class="muted" id="aiGenerationStatus" aria-live="polite">Backend connection is required. Your API key stays on the server; do not paste it here.</p>
+<p class="muted" id="aiGenerationStatus" aria-live="polite">Backend connection is required. Your API key stays on the server; do not paste it here.</p><button type="button" class="secondary" id="aiManualRetryButton" onclick="generateNewPaperWithAI(true)" hidden>↻ Try Again</button><details id="aiTechnicalDetails" hidden style="margin-top:10px"></details>
 <div id="aiGeneratedResult" hidden>
 <h3>Generated Paper — Review Before Printing</h3>
 <div class="ai-paper-card" id="aiGeneratedPaperPreview"></div>
 <button class="primary" onclick="printGeneratedAiPaper()">🖨️ Print / Save Generated Paper as PDF</button>
 </div>
-<p class="muted">PDF limit: 18 MB. AI-generated questions, Urdu, formulas and marks must be checked by a teacher before printing. Do not upload student personal information.</p>
+<p class="muted">PDF limit: 14 MB. AI-generated questions, Urdu, formulas and marks must be checked by a teacher before printing. Do not upload student personal information.</p>
 </section>
 <section class="panel" id="aiReferenceWorkflow">
 <h2>✨ AI Paper Regeneration</h2>
@@ -290,41 +290,131 @@ function buildGeneratedPaperMarkup(paper,brand){
 function getAiBrand(){
  return {school:document.getElementById("aiSchoolName").value.trim(),address:document.getElementById("aiSchoolAddress").value.trim(),watermark:document.getElementById("aiWatermark").value.trim()||document.getElementById("aiSchoolName").value.trim()};
 }
-async function generateNewPaperWithAI(){
- const file=document.getElementById("aiReferencePdf").files[0],brand=getAiBrand();
- const endpoint=document.getElementById("aiBackendUrl").value.trim().replace(/\/$/,"");
- const password=document.getElementById("aiBackendPassword").value;
+let aiGenerationInProgress = false;
+let aiLastSubmission = null;
+let aiLastTechnicalDetails = null;
+
+function showAiTechnicalDetails(details){
+ const host=document.getElementById("aiTechnicalDetails");
+ if(!host)return;
+ host.replaceChildren();
+ if(!details){host.hidden=true;return;}
+ const summary=document.createElement("summary");
+ summary.textContent="Technical details";
+ const body=document.createElement("div");
+ body.style.cssText="padding:8px 0;font-size:12px;color:#64748b;overflow-wrap:anywhere";
+ const lines=[];
+ if(details.model)lines.push("Model: "+details.model);
+ if(details.requestId)lines.push("Request ID: "+details.requestId);
+ if(details.status)lines.push("HTTP status: "+details.status);
+ body.textContent=lines.join(" • ")||"No technical details available.";
+ if(details.requestId){
+  const copy=document.createElement("button");
+  copy.type="button";copy.className="secondary";copy.style.marginTop="8px";copy.textContent="Copy request ID";
+  copy.onclick=async()=>{try{await navigator.clipboard.writeText(details.requestId);copy.textContent="Copied";}catch(e){copy.textContent="Select request ID above to copy";}};
+  body.appendChild(document.createElement("br"));body.appendChild(copy);
+ }
+ host.append(summary,body);host.hidden=false;
+}
+
+function sleepWithCountdown(seconds,status,onTick){
+ return new Promise(resolve=>{
+  let remaining=Math.max(1,Math.ceil(seconds));
+  const tick=()=>{status.textContent="AI server busy — automatically retrying in "+remaining+"s…";if(onTick)onTick(remaining);};
+  tick();
+  const timer=setInterval(()=>{remaining--;if(remaining<=0){clearInterval(timer);resolve();}else tick();},1000);
+ });
+}
+
+async function generatePaperRequest(endpoint,file,brand,password,settings,onRetry){
+ const maxRetries=2;
+ let lastError=null;
+ for(let attempt=0;attempt<=maxRetries;attempt++){
+  const form=new FormData();
+  form.append("referencePdf",file,file.name);
+  form.append("school",brand.school);
+  form.append("address",brand.address);
+  form.append("watermark",brand.watermark);
+  form.append("language",settings.language);
+  form.append("design",settings.design);
+  form.append("extraInstructions",settings.extraInstructions);
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),60000);
+  let response=null,data={};
+  try{
+   response=await fetch(endpoint+"/",{method:"POST",headers:{"X-App-Password":password},body:form,signal:controller.signal});
+   data=await response.json().catch(()=>({}));
+  }catch(error){
+   lastError={error:error&&error.name==="AbortError"?"The request timed out. Please try again.": "Network connection failed. Check your internet connection and try again.",status:0,retryable:true,requestId:null,model:null};
+  }finally{clearTimeout(timeout);}
+  if(response&&response.ok)return {response,data};
+  if(response){
+   const retryable=response.status===500||((response.status===502||response.status===503)&&data.retryable===true);
+   lastError={error:data.error||"AI backend request failed ("+response.status+").",status:response.status,retryable,requestId:data.requestId||response.headers.get("X-Request-Id"),model:data.model};
+  }
+  const canRetry=attempt<maxRetries&&lastError&&(
+   lastError.status===0||lastError.status===500||((lastError.status===502||lastError.status===503)&&lastError.retryable===true)
+  );
+  if(!canRetry)break;
+  const retryAfter=response?Number(response.headers.get("Retry-After")):0;
+  const fallbackDelay=attempt===0?2:5;
+  const baseDelay=Number.isFinite(retryAfter)&&retryAfter>0?retryAfter:fallbackDelay;
+  const jitter=0.8+Math.random()*0.4;
+  await sleepWithCountdown(Math.max(1,Math.round(baseDelay*jitter)),settings.status);
+  if(onRetry)onRetry(attempt+1);
+ }
+ const error=new Error(lastError?.error||"Request could not be completed.");
+ error.status=lastError?.status||0;error.retryable=lastError?.retryable===true;error.requestId=lastError?.requestId||null;error.model=lastError?.model||null;
+ throw error;
+}
+
+async function generateNewPaperWithAI(isManualRetry=false){
+ if(aiGenerationInProgress)return;
  const status=document.getElementById("aiGenerationStatus"),button=document.getElementById("aiGenerateButton");
- if(!file||file.type!=="application/pdf"){alert("Original PTS PDF select karein.");return;}
- if(!brand.school){alert("School / Academy ka naam enter karein.");return;}
- if(!endpoint||!/^https:\/\//i.test(endpoint)){alert("Cloudflare Worker ka complete HTTPS URL enter karein.");return;}
- if(!password){alert("Private app access password enter karein.");return;}
- if(file.size>18*1024*1024){alert("PDF 18 MB se chhoti honi chahiye.");return;}
- const form=new FormData();
- form.append("referencePdf",file,file.name);
- form.append("school",brand.school);
- form.append("address",brand.address);
- form.append("watermark",brand.watermark);
- form.append("language",document.getElementById("aiPaperLanguage").value);
- form.append("design",document.getElementById("aiPaperDesign").value);
- form.append("extraInstructions",document.getElementById("aiExtraInstructions").value);
+ if(!isManualRetry){
+  const file=document.getElementById("aiReferencePdf").files[0],brand=getAiBrand();
+  const endpoint=document.getElementById("aiBackendUrl").value.trim().replace(/\\/$/,"");
+  const password=document.getElementById("aiBackendPassword").value;
+  if(!file||file.type!=="application/pdf"){alert("Original PTS PDF select karein.");return;}
+  if(!brand.school){alert("School / Academy ka naam enter karein.");return;}
+  if(!endpoint||!/^https:\\/\\//i.test(endpoint)){alert("Cloudflare Worker ka complete HTTPS URL enter karein.");return;}
+  if(!password){alert("Private app access password enter karein.");document.getElementById("aiBackendPassword").focus();return;}
+  if(file.size>14*1024*1024){alert("PDF 14 MB se chhoti honi chahiye.");document.getElementById("aiReferencePdf").focus();return;}
+  aiLastSubmission={file,brand,endpoint,password,settings:{language:document.getElementById("aiPaperLanguage").value,design:document.getElementById("aiPaperDesign").value,extraInstructions:document.getElementById("aiExtraInstructions").value}};
+ }
+ if(!aiLastSubmission)return;
+ const {file,brand,endpoint,password,settings}=aiLastSubmission;
+ settings.status=status;
+ aiGenerationInProgress=true;
  button.disabled=true;button.textContent="Generating…";
- status.textContent="Original PDF secure AI backend ko bheji ja rahi hai. Paper analyze aur generate hone mein kuch waqt lag sakta hai.";
+ let retryButton=document.getElementById("aiManualRetryButton");
+ if(retryButton)retryButton.hidden=true;
+ showAiTechnicalDetails(null);
+ status.textContent="PDF secure AI backend ko bheji ja rahi hai. Connection aur AI processing mein waqt lag sakta hai.";
  try{
   localStorage.setItem("stm_ai_backend_url",endpoint);
-  const response=await fetch(endpoint+"/", {method:"POST",headers:{"X-App-Password":password},body:form});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.error||"AI backend request failed ("+response.status+").");
+  const result=await generatePaperRequest(endpoint,file,brand,password,settings);
+  const data=result.data;
   if(!data.paper||!Array.isArray(data.paper.sections))throw new Error("AI response mein valid paper nahi mila.");
   window.stmGeneratedAiPaper=data.paper;
   window.stmGeneratedAiBrand=brand;
   document.getElementById("aiGeneratedPaperPreview").innerHTML=buildGeneratedPaperMarkup(data.paper,brand);
   document.getElementById("aiGeneratedResult").hidden=false;
+  aiLastTechnicalDetails={model:data.model,requestId:data.requestId||result.response.headers.get("X-Request-Id"),status:result.response.status};
+  showAiTechnicalDetails(aiLastTechnicalDetails);
   status.textContent="Paper generate ho gaya. Har question, Urdu, formulas aur marks verify karein. Model: "+(data.model||"AI");
+  if(retryButton)retryButton.hidden=true;
  }catch(error){
+  aiLastTechnicalDetails={model:error.model,requestId:error.requestId,status:error.status};
+  showAiTechnicalDetails(aiLastTechnicalDetails);
   status.textContent="Generation error: "+(error.message||"Request complete nahi hui.");
+  if(error.status===401){status.textContent+=" Access password check karein.";document.getElementById("aiBackendPassword").focus();}
+  if(error.status===413){status.textContent+=" PDF 14 MB se chhoti honi chahiye.";document.getElementById("aiReferencePdf").focus();}
+  if(error.status===400){/* Display the backend's safe message without retrying. */}
+  if((error.status===502||error.status===503)&&error.retryable){status.textContent+=" AI model busy hai. Aap dobara try kar sakte hain.";}
+  if(retryButton){retryButton.hidden=false;retryButton.textContent="↻ Try Again";}
  }finally{
-  button.disabled=false;button.textContent="✨ Generate New Paper";
+  aiGenerationInProgress=false;button.disabled=false;button.textContent="✨ Generate New Paper";
  }
 }
 function printGeneratedAiPaper(){
