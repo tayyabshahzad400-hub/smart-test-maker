@@ -121,8 +121,12 @@ export default {
       }
       const base64 = btoa(binary);
       const prompt = makePrompt({ school, address, watermark, language, design, extraInstructions });
+      // Model failover: use only current text+PDF-capable Gemini generation models.
+      // Keep the list configurable so models can be changed without editing source.
       const primaryModel = env.GEMINI_MODEL || "gemini-3.8-flash";
-      const fallbackModel = "gemini-3.5-flash-lite";
+      const configuredFallbacks = String(env.GEMINI_FALLBACK_MODELS || "gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.1-flash-lite,gemini-3.6-flash")
+        .split(",").map(x => x.trim()).filter(Boolean);
+      const modelChain = [...new Set([primaryModel, ...configuredFallbacks])];
       const requestBody = JSON.stringify({
         contents: [{
           role: "user",
@@ -145,37 +149,62 @@ export default {
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY
           },
-          body: requestBody
+          body: requestBody,
+          signal: AbortSignal.timeout(18000)
         }
       );
-      const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      const retryableStatuses = new Set([429, 500, 502, 503, 504]);
       let model = primaryModel;
-      let apiResponse;
-      let lastNetworkError;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          apiResponse = await callGemini(primaryModel);
-          if (apiResponse.ok || ![429, 500, 502, 503, 504].includes(apiResponse.status)) break;
-        } catch (error) {
-          lastNetworkError = error;
+      let apiResponse = null;
+      let apiData = {};
+      const startedAt = Date.now();
+      let lastProviderMessage = "All configured AI models are currently unavailable.";
+      for (const candidateModel of modelChain) {
+        if (Date.now() - startedAt > 45000) break;
+        model = candidateModel;
+        // One short retry for transient capacity errors on each model, then fail over.
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const candidateResponse = await callGemini(candidateModel);
+            if (candidateResponse.ok) {
+              apiResponse = candidateResponse;
+              apiData = await candidateResponse.json().catch(() => ({}));
+              break;
+            }
+            const candidateData = await candidateResponse.json().catch(() => ({}));
+            lastProviderMessage = candidateData?.error?.message || `HTTP ${candidateResponse.status}`;
+            if (!retryableStatuses.has(candidateResponse.status)) {
+              apiResponse = candidateResponse;
+              apiData = candidateData;
+              break;
+            }
+            if (attempt === 0) await wait(900);
+            else {
+              apiResponse = candidateResponse;
+              apiData = candidateData;
+            }
+          } catch (error) {
+            lastProviderMessage = (error?.message || "Network timeout").slice(0, 180);
+            if (attempt === 1) apiResponse = null;
+            else await wait(900);
+          }
+          if (apiResponse?.ok || (apiResponse && !retryableStatuses.has(apiResponse.status))) break;
         }
-        if (attempt < 2) await wait(attempt === 0 ? 2000 : 5000);
-      }
-      if (!apiResponse || !apiResponse.ok && [429, 500, 502, 503, 504].includes(apiResponse.status)) {
-        try {
-          model = fallbackModel;
-          apiResponse = await callGemini(fallbackModel);
-        } catch (error) {
-          lastNetworkError = error;
-        }
+        if (apiResponse?.ok) break;
+        if (apiResponse && !retryableStatuses.has(apiResponse.status)) break;
+        apiResponse = null;
       }
       if (!apiResponse) {
-        return json({ error: `Could not connect to the AI provider: ${(lastNetworkError?.message || "network error").slice(0, 180)}. Please try again shortly.` }, 502);
+        return json({
+          error: lastProviderMessage.slice(0, 400) || "All AI models are busy. Please try again shortly.",
+          model,
+          retryable: true
+        }, 503);
       }
-      const apiData = await apiResponse.json().catch(() => ({}));
       if (!apiResponse.ok) {
-        const message = apiData?.error?.message || "AI provider rejected the request.";
-        return json({ error: message.slice(0, 500) }, apiResponse.status >= 500 ? 502 : 400);
+        const message = apiData?.error?.message || lastProviderMessage || "AI provider rejected the request.";
+        return json({ error: message.slice(0, 500), model, retryable: retryableStatuses.has(apiResponse.status) },
+          retryableStatuses.has(apiResponse.status) ? 503 : 400);
       }
       const raw = apiData?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
       if (!raw) return json({ error: "AI returned no paper content. Try again with a clearer or smaller PDF." }, 502);
